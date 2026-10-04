@@ -1,0 +1,16 @@
+{
+  "name": "xiaoriji-vendor",
+  "private": true,
+  "description": "把三个排盘库打包成 js/vendor.js（浏览器全局变量 window.XUAN）",
+  "scripts": {
+    "build": "esbuild entry.js --bundle --minify --format=iife --platform=browser --legal-comments=none --outfile=../js/vendor.js"
+  },
+  "dependencies": {
+    "lunar-javascript": "1.7.7",
+    "iztro": "2.6.1",
+    "liuren-ts-lib": "3.1.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  }
+}

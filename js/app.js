@@ -1,0 +1,955 @@
+(()=>{
+const $=s=>document.querySelector(s);
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches, T=RM?.35:1;
+const X=window.XUAN, D=window.XDATA;
+const sv=(d,c='')=>`<svg class="${c}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const CHEV='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+const PLUS=sv('<path d="M12 6v12M6 12h12"/>');
+const F='<circle cx="12" cy="12" r="9"/>';
+const BASE_MOODS={
+  happy:{t:'开心',d:F+'<path d="M8 10.8q1-1.6 2 0M14 10.8q1-1.6 2 0M8 14q4 4 8 0"/>',c:'var(--m-happy)'},
+  calm:{t:'平静',d:F+'<path d="M8.5 10.5h2M13.5 10.5h2M10 15h4"/>',c:'var(--m-calm)'},
+  down:{t:'有点丧',d:F+'<path d="M9 10v.6M15 10v.6M8.6 16.4q3.4-3 6.8 0"/>',c:'var(--m-down)'},
+  angry:{t:'生气',d:F+'<path d="M8 8.4l2.6 1.3M16 8.4l-2.6 1.3M9.6 11.6v.4M14.4 11.6v.4M9 15.6h6"/>',c:'var(--m-angry)'},
+  moved:{t:'感动',d:F+'<path d="M9 10v.6M15 10v.6M9.6 14.4q2.4 2 4.8 0M17 12.2q-1.1 1.6 0 2.5q1.1-.9 0-2.5z"/>',c:'var(--m-moved)'},
+  tired:{t:'累了',d:F+'<path d="M8 10.6h2.5M13.5 10.6h2.5"/><circle cx="12" cy="15.2" r="1.2"/><path d="M17.5 2.5h3l-3 3h3"/>',c:'var(--m-tired)'}
+};
+const BASE_WEATHER={
+  sunny:{t:'晴',d:'<circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6 7 7M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/>'},
+  cloudy:{t:'多云',d:'<path d="M7 18h10.5a3.5 3.5 0 0 0 .3-7 5.5 5.5 0 0 0-10.6-1A4 4 0 0 0 7 18z"/>'},
+  rain:{t:'小雨',d:'<path d="M7 14h10.5a3.5 3.5 0 0 0 .3-7 5.5 5.5 0 0 0-10.6-1A4 4 0 0 0 7 14z"/><path d="M9 17l-1 3M13 17l-1 3M17 17l-1 3"/>'},
+  snow:{t:'下雪',d:'<path d="M12 4v16M5.1 8l13.8 8M18.9 8 5.1 16"/>'},
+  wind:{t:'有风',d:'<path d="M3 9h11a2.5 2.5 0 1 0-2.5-2.5M3 13h15a2.5 2.5 0 1 1-2.5 2.5M3 17h5"/>'},
+  fog:{t:'起雾',d:'<path d="M4 8h13M7 12h13M4 16h10M17 16h3"/>'}
+};
+const EXTRA_ICONS={
+  face:F+'<path d="M9 10v.6M15 10v.6"/><circle cx="12" cy="15" r="1.4"/>',
+  heart:'<path d="M12 19s-7-4.3-7-9.2A3.8 3.8 0 0 1 12 7.5a3.8 3.8 0 0 1 7 2.3C19 14.7 12 19 12 19z"/>',
+  star:'<path d="M12 4l2.3 5 5.2.6-3.9 3.5 1.1 5.2L12 15.6l-4.7 2.7 1.1-5.2-3.9-3.5 5.2-.6z"/>',
+  spark:'<path d="M12 3v5M12 16v5M3 12h5M16 12h5M6.5 6.5 9 9M15 15l2.5 2.5M6.5 17.5 9 15M15 9l2.5-2.5"/>',
+  music:'<path d="M9 18V6l10-2v12"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="16" r="2"/>',
+  leaf:'<path d="M5 19C5 10 10 5 19 5c0 9-5 14-14 14z"/><path d="M5 19l8-8"/>',
+  moon:'<path d="M18 14.5A7 7 0 0 1 9.5 6a7 7 0 1 0 8.5 8.5z"/>',
+  drop:'<path d="M12 4s6 6.5 6 10.5a6 6 0 0 1-12 0C6 10.5 12 4 12 4z"/>',
+  rainbow:'<path d="M3 17a9 9 0 0 1 18 0M6.5 17a5.5 5.5 0 0 1 11 0M10 17a2 2 0 0 1 4 0"/>',
+  thunder:'<path d="M7 13h10.5a3.5 3.5 0 0 0 .3-7 5.5 5.5 0 0 0-10.6-1A4 4 0 0 0 7 13z"/><path d="M12.5 14l-2 3.5h3l-2 3.5"/>'
+};
+const CAL=sv('<rect x="4" y="5.5" width="16" height="14.5" rx="2.5"/><path d="M8 3.5v4M16 3.5v4M4 10h16"/>');
+const CUSTOM_COLORS=['#F2CF72','#A6CDB6','#A9B8D2','#EC9B8A','#EFA6B7','#C4B6DD','#B9D98F','#F0B48A'];
+const PALETTES={sakura:{n:'樱粉',h:348,s:70,a:60},mint:{n:'薄荷绿',h:152,s:36,a:44},sky:{n:'雾蓝',h:208,s:52,a:52},lilac:{n:'藕紫',h:268,s:40,a:58},apricot:{n:'杏子',h:30,s:72,a:54}};
+const FONTS={xiaowei:{f:'"ZCOOL XiaoWei","Noto Serif SC",serif',d:'清秀 · 站酷小薇'},song:{f:'"Noto Serif SC",serif',d:'端正 · 思源宋体'},hand:{f:'"Long Cang","Noto Serif SC",cursive',d:'随手写 · 龙藏体'}};
+const CUPS={paper:'小纸杯',wood:'木签筒',glass:'玻璃罐'};
+const METHODS={
+  xlr:{n:'小六壬',need:'此刻时间，或报三个数',stamp:'壬',tip:'var(--accent)'},
+  mh:{n:'梅花易数',need:'此刻年月日时，或报数',stamp:'梅',tip:'repeating-linear-gradient(var(--accent) 0 4px, transparent 4px 7px)'},
+  dlr:{n:'大六壬',need:'以此刻起课',stamp:'课',tip:'linear-gradient(var(--accent) 0 35%, transparent 35% 65%, var(--accent) 65%)'},
+  bz:{n:'八字 · 今日',need:'需要出生日期',stamp:'命',tip:'repeating-linear-gradient(var(--accent) 0 2px, transparent 2px 5px)'},
+  zw:{n:'紫微 · 今日',need:'需要出生日期、时辰、性别',stamp:'紫',tip:'linear-gradient(var(--accent),var(--blush-2))'},
+  hl:{n:'今日黄历',need:'无需输入',stamp:'历',tip:'linear-gradient(var(--line-strong) 0 50%, var(--accent) 50%)'}
+};
+
+/* ---------- storage ---------- */
+const KEY='xiaoriji.v1';
+const ls={get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const SAMPLES=[
+ ['2025-04-06','sunny',['happy'],'楼下的玉兰全开了，骑车经过的时候故意多绕了一圈。买了一个有点贵的可颂，值得。'],
+ ['2025-06-18','rain',['calm'],'下午坐在图书馆靠窗的位置，雨一直不大不小。读完了一本放了半年的书，最后一页有上一个借书人的铅笔字：“慢慢来”。'],
+ ['2025-08-02','cloudy',['tired'],'搬家第二天。纸箱还剩七个，泡面还剩两包。晚上找不到台灯，只好开着手机电筒写这几行。'],
+ ['2025-10-11','wind',['moved','happy'],'视频的时候妈妈偷偷把镜头转向阳台，说她种的薄荷活下来了。其实是我走之前顺手插的那一枝。'],
+ ['2025-12-24','snow',['happy'],'第一场雪！在路边捏了一个拳头大的雪人，放进自行车车筐，骑到一半它掉了。'],
+ ['2026-01-15','fog',['down'],'早上起来窗外什么都看不清，心情也是。交了作业，不确定写得对不对。晚饭吃了热汤面，好一点。'],
+ ['2026-03-03','sunny',['calm'],'第一次自己做番茄炒蛋，盐放少了，但颜色很好看。'],
+ ['2026-05-20','cloudy',['angry','tired'],'排了四十分钟的队，轮到我刚好卖完。回家路上越想越气，后来买了一支冰淇淋，气消了一半。'],
+ ['2026-07-08','sunny',['happy'],'傍晚的云是粉色的，像谁把草莓牛奶打翻了。拍了十二张，没有一张拍得出来。'],
+ ['2026-09-12','rain',['tired'],'连上三节课，伞还落在了教室。淋着回来的，不过路灯下的雨丝挺好看。']
+].map((r,i)=>({id:'s'+i,date:r[0],weather:r[1],moods:r[2],text:r[3],sample:true}));
+SAMPLES.push({id:'s10',date:'2026-09-30',weather:'sunny',moods:[],text:'',sample:true,todos:[
+  {name:'背 30 个单词',type:'重复',done:true,minutes:25,time:'08:40'},{name:'小组讨论',type:'日程',done:true,minutes:60,time:'14:00'},
+  {name:'交投资学 Milestone',type:'临时',done:true,minutes:90,time:'16:05'},{name:'喝够2000ml水',type:'重复',done:true,minutes:null,time:'21:10'},{name:'洗衣服',type:'临时',done:false,minutes:null,time:''}]});
+let entries=ls.get(KEY)||SAMPLES.slice();
+entries.forEach(e=>{if(!Array.isArray(e.moods)){e.moods=e.mood?[e.mood]:[];delete e.mood}if(!e.weather)e.weather='sunny'});
+if(!entries.some(e=>e.id==='s10')&&entries.some(e=>e.sample))entries.push(SAMPLES[10]);
+const save=()=>ls.set(KEY,entries);
+const S=Object.assign({palette:'sakura',font:'xiaowei',cup:'paper',sound:true,customMoods:[],customWeather:[],method:'xlr',profile:{},hang:'lantern',sill:'leafy'},ls.get(KEY+'.settings')||{});
+if(!S.profile)S.profile={};
+const saveS=()=>ls.set(KEY+'.settings',S);
+const MOODS=()=>{const o={...BASE_MOODS};S.customMoods.forEach(c=>o[c.k]={t:c.t,d:EXTRA_ICONS[c.icon]||EXTRA_ICONS.face,c:c.color,custom:1});return o};
+const WEATHER=()=>{const o={...BASE_WEATHER};S.customWeather.forEach(c=>o[c.k]={t:c.t,d:EXTRA_ICONS[c.icon]||EXTRA_ICONS.spark,custom:1});return o};
+const pad=n=>String(n).padStart(2,'0');
+const ymd=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const todayStr=()=>ymd(new Date());
+let drawn=ls.get(KEY+'.today'); if(!drawn||drawn.d!==todayStr()) drawn={d:todayStr(),n:0};
+let recent=[], filters={mood:null,weather:null}, mode='diary', busy=false, pendingDrop=null;
+
+/* ---------- theme: palette + font ---------- */
+function isDark(){const t=document.documentElement.getAttribute('data-theme');if(t==='dark')return true;if(t==='light')return false;return matchMedia('(prefers-color-scheme: dark)').matches}
+function applyTheme(){
+  const p=PALETTES[S.palette]||PALETTES.sakura,h=p.h,s=p.s,st=document.documentElement.style,set=(k,v)=>st.setProperty(k,v),hs=(sat,l,a)=>a==null?`hsl(${h} ${sat.toFixed(1)}% ${l}%)`:`hsl(${h} ${sat.toFixed(1)}% ${l}% / ${a})`;
+  if(!isDark()){
+    set('--bg',hs(s*.9,99.2));set('--bg-out',hs(s*.45,96));set('--paper','#FFFFFF');set('--paper-back',hs(s,97));
+    set('--blush',hs(s,94.5));set('--blush-2',hs(s*.75,87));set('--hair',hs(s*.35,91.5));
+    set('--line',hs(s*.25,82));set('--line-strong',hs(s*.2,72));set('--ink',hs(8,21));set('--ink-2',hs(6,48));
+    set('--accent',hs(s*.78,p.a));set('--accent-ink','#FFFFFF');set('--cup','#FFFFFF');set('--cup-in',hs(s*.7,93));set('--scrim',hs(s,98,.86));
+  }else{
+    set('--bg',hs(10,10.5));set('--bg-out',hs(10,7));set('--paper',hs(9,14.5));set('--paper-back',hs(12,18));
+    set('--blush',hs(16,20));set('--blush-2',hs(16,27));set('--hair',hs(9,20));
+    set('--line',hs(9,33));set('--line-strong',hs(9,43));set('--ink',hs(20,93));set('--ink-2',hs(7,64));
+    set('--accent',hs(s*.75,75));set('--accent-ink',hs(20,13));set('--cup',hs(9,15.5));set('--cup-in',hs(14,20));set('--scrim',hs(10,8,.86));
+  }
+  set('--f-display',(FONTS[S.font]||FONTS.xiaowei).f);
+}
+try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',applyTheme)}catch(e){}
+new MutationObserver(applyTheme).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+
+/* ---------- background decorations ---------- */
+const HANGS={
+  lantern:{n:'圆灯笼',svg:`<path d="M40 0V48"/><path d="M33 48h14v5H33z" fill="var(--bg)"/><ellipse cx="40" cy="78" rx="21" ry="25" fill="var(--blush)"/><path d="M40 53V103M30 55Q23 78 30 101M50 55Q57 78 50 101"/><path d="M33 102h14v5H33z" fill="var(--bg)"/><g class="flutter" style="transform-origin:40px 107px"><path d="M40 107v9" /><path d="M36 116l-2 24M40 116v26M44 116l2 24" stroke="var(--accent)" opacity=".6"/></g>`},
+  palace:{n:'宫灯',svg:`<path d="M40 0V46"/><path d="M28 50h24l4 6H24z" fill="var(--bg)"/><path d="M34 46h12v4H34z"/><path d="M26 56h28v44H26z" fill="var(--paper-back)"/><path d="M33 56v44M47 56v44M26 66h28M26 90h28"/><path d="M24 100h32l-4 6H28z" fill="var(--bg)"/><g class="flutter" style="transform-origin:40px 106px"><path d="M26 106v14M54 106v14" stroke="var(--accent)" opacity=".6"/><path d="M40 106v26" stroke="var(--accent)" opacity=".6"/><circle cx="40" cy="134" r="2" fill="var(--accent)" stroke="none" opacity=".6"/></g>`},
+  glass:{n:'玻璃风铃',svg:`<path d="M40 0V60"/><path d="M23 86Q23 62 40 62Q57 62 57 86Z" fill="var(--paper)" fill-opacity=".55"/><circle cx="33" cy="74" r="2.4" fill="var(--blush-2)" stroke="none"/><circle cx="45" cy="70" r="2" fill="var(--blush-2)" stroke="none"/><circle cx="48" cy="79" r="2.4" fill="var(--blush-2)" stroke="none"/><path d="M28 70Q31 66 34 65" opacity=".7"/><g class="flutter" style="transform-origin:40px 86px"><path d="M40 86V100"/><circle cx="40" cy="89" r="1.6" fill="currentColor" stroke="none"/><path d="M34 100h12v42H34z" fill="var(--blush)"/><path d="M37 108h6M37 113h4"/></g>`},
+  bamboo:{n:'竹管风铃',svg:`<path d="M40 0V38"/><path d="M16 42Q40 34 64 42"/><path d="M22 41V48M32 39V48M48 39V48M58 41V48"/><g class="flutter" style="transform-origin:40px 42px"><rect x="19.5" y="48" width="5" height="44" rx="2" fill="var(--wood)"/><rect x="29.5" y="48" width="5" height="58" rx="2" fill="var(--wood)"/><rect x="45.5" y="48" width="5" height="52" rx="2" fill="var(--wood)"/><rect x="55.5" y="48" width="5" height="38" rx="2" fill="var(--wood)"/><path d="M40 40V104"/><circle cx="40" cy="80" r="3.5" fill="var(--bg)"/><path d="M40 104Q34 116 40 130Q46 116 40 104Z" fill="var(--blush)"/></g>`},
+  doll:{n:'晴天娃娃',svg:`<path d="M40 0V62"/><circle cx="40" cy="78" r="16" fill="var(--bg)"/><path d="M27 92C21 104 17 117 14 128Q20 123 26 129Q33 123 40 130Q47 123 54 129Q60 123 66 128C63 117 59 104 53 92" fill="var(--bg)"/><path d="M28 93Q40 98 52 93"/><path d="M40 96l-4 5M40 96l4 5"/><circle cx="34" cy="77" r="1.3" fill="currentColor" stroke="none"/><circle cx="46" cy="77" r="1.3" fill="currentColor" stroke="none"/><path d="M36 83Q40 86.5 44 83"/><ellipse cx="30.5" cy="82" rx="2.6" ry="1.4" fill="var(--blush-2)" stroke="none"/><ellipse cx="49.5" cy="82" rx="2.6" ry="1.4" fill="var(--blush-2)" stroke="none"/>`},
+  none:{n:'不挂',svg:''}
+};
+const SILL_BASE='<path d="M0 100H400M0 106H300"/><path d="M342 100V8M348 100V8"/>';
+const SILLS={
+  leafy:{n:'叶子盆栽 · 杯子',svg:`<path d="M42 72L46 100H78L82 72Z" fill="var(--bg)"/><path d="M40 72H84"/><g class="leaves" style="transform-origin:62px 72px"><path d="M62 72C61 58 56 48 47 41"/><path d="M47 41C41 32 31 31 27 37C33 43 41 45 47 41"/><path d="M62 72C64 55 70 45 80 38"/><path d="M80 38C86 28 97 28 99 33C93 41 85 42 80 38"/><path d="M62 72C62 56 63 41 62 27"/><path d="M62 27C56 19 58 9 64 5C70 11 68 21 62 27"/></g><path d="M150 100V86Q150 80 156 80H170Q176 80 176 86V100"/><path d="M176 86Q184 86 182 93Q180 98 176 97"/><path d="M158 74Q156 70 159 66M166 74Q164 70 167 66" opacity=".7"/>`},
+  cactus:{n:'仙人掌 · 书',svg:`<g class="leaves" style="transform-origin:61px 82px"><path d="M56 82V46Q56 37 61 37Q66 37 66 46V82" fill="var(--bg)"/><path d="M56 66Q46 66 46 56V50Q46 46 49.5 46Q53 46 53 50V58" fill="var(--bg)"/><path d="M66 60Q75 60 75 51V47Q75 44 72 44Q69 44 69 47V54" fill="var(--bg)"/><path d="M61 44v3M59 54v3M63 64v3" opacity=".6"/><circle cx="61" cy="35" r="2.6" fill="var(--blush-2)" stroke="none"/></g><path d="M44 82L48 100H74L78 82Z" fill="var(--bg)"/><path d="M42 82H80"/><path d="M140 100V90H198V100" fill="var(--bg)"/><path d="M146 90V81H192V90" fill="var(--bg)"/><path d="M150 81V73H186V81" fill="var(--bg)"/><path d="M148 95H190M154 85H184" opacity=".5"/><path d="M180 73V64l4 3 4-3v9" opacity=".8"/>`},
+  succulent:{n:'多肉 · 小花瓶',svg:`<g class="leaves" style="transform-origin:65px 88px"><path d="M65 88Q50 82 44 70Q58 70 65 88" fill="var(--bg)"/><path d="M65 88Q80 82 86 70Q72 70 65 88" fill="var(--bg)"/><path d="M65 88Q57 74 65 62Q73 74 65 88" fill="var(--bg)"/><path d="M65 88Q52 88 42 82Q54 78 65 88" fill="var(--bg)"/><path d="M65 88Q78 88 88 82Q76 78 65 88" fill="var(--bg)"/></g><path d="M34 88H96"/><path d="M36 88Q36 100 46 100H84Q94 100 94 88" fill="var(--bg)"/><path d="M157 100Q147 92 151 82Q155 74 156 66H166Q167 74 171 82Q175 92 165 100Z" fill="var(--bg)"/><g class="leaves" style="transform-origin:161px 66px"><path d="M161 66Q159 48 166 36"/><path d="M161 60Q153 52 150 44"/><circle cx="166" cy="34" r="4" fill="var(--blush)"/><circle cx="149" cy="42" r="3" fill="var(--blush)"/></g>`},
+  monstera:{n:'龟背竹 · 台灯',svg:`<g class="leaves" style="transform-origin:60px 76px"><path d="M60 76Q57 56 43 44Q29 47 32 61Q40 74 60 76Z" fill="var(--bg)"/><path d="M41 51l7 5M35 58l9 3M40 66l9 1" /><path d="M60 76Q64 50 82 38Q97 43 92 58Q82 71 60 76Z" fill="var(--bg)"/><path d="M84 45l-7 7M90 52l-9 5M86 62l-10 2"/><path d="M60 76Q60 52 58 30"/><path d="M58 30Q48 22 52 12Q62 16 58 30Z" fill="var(--bg)"/></g><path d="M40 76L44 100H76L80 76Z" fill="var(--bg)"/><path d="M38 76H82"/><path d="M148 100H184M166 100V70"/><path d="M151 70H181L173 50H159Z" fill="var(--blush)"/><path d="M166 76q4 2 4 6" opacity=".6"/>`}
+};
+function applyDeco(){const h=HANGS[S.hang]||HANGS.lantern,s=SILLS[S.sill]||SILLS.leafy;$('#hang').innerHTML=h.svg;$('#hang').style.display=h.svg?'':'none';$('#sill').innerHTML=SILL_BASE+s.svg}
+const miniHang=k=>`<svg viewBox="0 0 80 150" fill="none" stroke="var(--line-strong)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:44px;height:84px">${HANGS[k].svg||'<path d="M30 70h20" stroke-dasharray="3 4"/>'}</svg>`;
+const miniSill=k=>`<svg viewBox="20 0 190 112" fill="none" stroke="var(--line-strong)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:100%;height:58px"><path d="M0 100H400"/>${SILLS[k].svg}</svg>`;
+
+/* ---------- cup designs ---------- */
+function cupParts(style){
+  if(style==='oracle') return {back:'<ellipse cx="80" cy="14" rx="66" ry="10" fill="var(--cup-in)" stroke="var(--line-strong)" stroke-width="1.4"/>',front:`
+    <path d="M14 14A66 10 0 0 0 146 14L140 136A60 10 0 0 1 20 136Z" fill="var(--paper-back)" stroke="var(--line-strong)" stroke-width="1.4"/>
+    <path d="M15 28A65 10 0 0 0 145 28M19 122A61 10 0 0 0 141 122" fill="none" stroke="var(--accent)" stroke-width="2.2" opacity=".7"/>
+    <circle cx="80" cy="76" r="25" fill="var(--paper)" stroke="var(--accent)" stroke-width="1.2"/>
+    <g stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round"><path d="M68 66h24M68 74h9M83 74h9M68 82h24"/></g>
+    <text x="80" y="98" text-anchor="middle" font-size="9" fill="var(--ink-2)" style="font-family:var(--f-classic);letter-spacing:2px">卜 筮</text>`};
+  if(style==='wood') return {back:'<ellipse cx="80" cy="14" rx="70" ry="11" fill="var(--cup-in)" stroke="var(--line-strong)" stroke-width="1.4"/>',front:`
+    <path d="M10 14A70 11 0 0 0 150 14V136A70 11 0 0 1 10 136Z" fill="var(--wood)" stroke="var(--line-strong)" stroke-width="1.4"/>
+    <path d="M38 30C36 60 38 100 36 140M78 33C80 70 76 110 79 146M120 30C122 64 118 104 121 141" fill="none" stroke="var(--stick-line)" stroke-width="1" opacity=".7"/>
+    <path d="M10 30A70 11 0 0 0 150 30M10 122A70 11 0 0 0 150 122" fill="none" stroke="var(--accent)" stroke-width="3" opacity=".55"/>
+    <rect x="62" y="58" width="36" height="46" rx="3" fill="var(--paper)" stroke="var(--accent)" stroke-width="1.3"/>
+    <text x="80" y="88" text-anchor="middle" font-size="20" fill="var(--accent)" style="font-family:var(--f-display)">签</text>`};
+  if(style==='glass') return {back:'<ellipse cx="80" cy="14" rx="66" ry="10" fill="none" stroke="var(--line-strong)" stroke-width="1.2" opacity=".7"/>',front:`
+    <path d="M14 14A66 10 0 0 0 146 14C151 42 153 100 146 130Q143 145 128 146H32Q17 145 14 130C7 100 9 42 14 14Z" fill="var(--paper)" fill-opacity=".32" stroke="var(--line-strong)" stroke-width="1.4"/>
+    <path d="M30 42Q25 82 31 120" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" opacity=".85"/>
+    <path d="M38 50Q35 66 37 78" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".7"/>
+    <path d="M13 24A67 10 0 0 0 147 24" fill="none" stroke="var(--accent)" stroke-width="2.4" opacity=".75"/>
+    <path d="M40 31q-12-10-14 0q6 6 14 0q-4 10-2 18M40 31q10-10 14-2q-5 6-14 2q4 10 8 16" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" opacity=".85"/>`};
+  return {back:'<ellipse cx="80" cy="14" rx="72" ry="11" fill="var(--cup-in)" stroke="var(--line-strong)" stroke-width="1.4"/>',front:`
+    <path d="M8 14A72 11 0 0 0 152 14C150 60 146 110 138 136Q136 144 126 145H34Q24 144 22 136C14 110 10 60 8 14Z" fill="var(--cup)" stroke="var(--line-strong)" stroke-width="1.4"/>
+    <path d="M13 46Q80 60 147 46M19 116Q80 128 141 116" fill="none" stroke="var(--line)" stroke-width="1.2"/>
+    <path d="M15 52Q80 66 145 52" fill="none" stroke="var(--blush-2)" stroke-width="3" stroke-linecap="round"/>
+    <g font-size="15" fill="var(--ink-2)" text-anchor="middle" style="font-family:var(--f-display)"><text x="80" y="82">小</text><text x="80" y="98">日</text><text x="80" y="114">记</text></g>`};
+}
+function applyCup(){const p=cupParts(mode==='oracle'?'oracle':S.cup);$('#cupBack').innerHTML=p.back;$('#cupFront').innerHTML=p.front}
+
+/* ---------- sound & haptics ---------- */
+let actx,noise;
+function ac(){ if(!actx){ const C=window.AudioContext||window.webkitAudioContext; if(!C) return null; actx=new C(); const b=actx.createBuffer(1,actx.sampleRate*.5,actx.sampleRate),c=b.getChannelData(0); for(let i=0;i<c.length;i++)c[i]=Math.random()*2-1; noise=b;} if(actx.state==='suspended')actx.resume(); return actx;}
+function clack(delay=0,vol=.22){ if(!S.sound) return; try{const a=ac(); if(!a) return; const t=a.currentTime+delay; const gl=mode==='diary'&&S.cup==='glass';
+  const s=a.createBufferSource(); s.buffer=noise; const bp=a.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=(gl?3200:1600)+Math.random()*2200; bp.Q.value=gl?14:7;
+  const g=a.createGain(); g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(.001,t+(gl?.12:.06)); s.connect(bp).connect(g).connect(a.destination); s.start(t); s.stop(t+.14);
+  const o=a.createOscillator(); o.type=gl?'sine':'triangle'; o.frequency.setValueAtTime((gl?1800:380)+Math.random()*(gl?900:260),t); const g2=a.createGain(); g2.gain.setValueAtTime(vol*(gl?.35:.5),t); g2.gain.exponentialRampToValueAtTime(.001,t+(gl?.18:.05)); o.connect(g2).connect(a.destination); o.start(t); o.stop(t+.2);
+ }catch(e){} }
+function pop(){ if(!S.sound) return; try{const a=ac(); if(!a) return; const t=a.currentTime; const o=a.createOscillator(); o.type='sine'; o.frequency.setValueAtTime(520,t); o.frequency.exponentialRampToValueAtTime(1250,t+.13); const g=a.createGain(); g.gain.setValueAtTime(.16,t); g.gain.exponentialRampToValueAtTime(.001,t+.18); o.connect(g).connect(a.destination); o.start(t); o.stop(t+.2);}catch(e){} }
+function swish(){ if(!S.sound) return; try{const a=ac(); if(!a) return; const t=a.currentTime; const s=a.createBufferSource(); s.buffer=noise; const f=a.createBiquadFilter(); f.type='bandpass'; f.frequency.setValueAtTime(900,t); f.frequency.linearRampToValueAtTime(2400,t+.3); f.Q.value=.8; const g=a.createGain(); g.gain.setValueAtTime(.0001,t); g.gain.linearRampToValueAtTime(.09,t+.08); g.gain.exponentialRampToValueAtTime(.001,t+.34); s.connect(f).connect(g).connect(a.destination); s.start(t); s.stop(t+.36);}catch(e){} }
+const buzz=p=>{try{navigator.vibrate&&navigator.vibrate(p)}catch(e){}};
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const rnd=a=>a[Math.floor(Math.random()*a.length)];
+
+/* ---------- helpers ---------- */
+function tipOf(e){const M=MOODS();const cs=(e.moods||[]).map(k=>M[k]&&M[k].c).filter(Boolean);
+  if(!cs.length)return'var(--line)';if(cs.length===1)return cs[0];const st=100/cs.length;return`linear-gradient(${cs.map((c,i)=>`${c} ${(i*st).toFixed(1)}% ${((i+1)*st).toFixed(1)}%`).join(',')})`}
+function fmt(date){const [y,m,d]=date.split('-').map(Number);const wd='日一二三四五六'[new Date(y,m-1,d).getDay()];return{md:pad(m)+'.'+pad(d),y,m,d,wd}}
+function lunarOf(date){try{const [y,m,d]=date.split('-').map(Number);return X.Solar.fromYmd(y,m,d).getLunar()}catch(e){return null}}
+function lunarText(date){const L=lunarOf(date);return L?`农历${L.getMonthInChinese()}月${L.getDayInChinese()}`:''}
+function ago(date){const [y,m,d]=date.split('-').map(Number);const a=new Date(y,m-1,d),n=new Date();n.setHours(0,0,0,0);const days=Math.round((n-a)/864e5);
+  if(days<=0)return'今天写的';if(days===1)return'昨天的你';if(days<31)return days+' 天前的你';
+  let mo=(n.getFullYear()-y)*12+(n.getMonth()-(m-1));if(n.getDate()<d)mo--;const yy=Math.floor(mo/12),mm=mo%12;
+  return (yy?yy+' 年':'')+(mm?(yy?' ':'')+mm+' 个月':'')+'前的你';}
+function toast(msg){const t=document.createElement('div');t.className='toast';t.textContent=msg;$('#app').appendChild(t);t.animate([{opacity:0,transform:'translate(-50%,-8px)'},{opacity:1,transform:'translate(-50%,0)'}],{duration:220,easing:'ease-out'});setTimeout(()=>{t.animate([{opacity:1},{opacity:0}],{duration:250}).onfinish=()=>t.remove()},2000)}
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmtMin=m=>!m?'':m<60?m+' 分钟':Math.floor(m/60)+' 小时'+(m%60?(m%60)+' 分':'');
+
+/* ---------- bottom sheet ---------- */
+let bsClose=null;
+function openBS(html,mount,onClose){const bs=$('#bs'),c=$('#bsCard');c.innerHTML='<div class="bs-grip"></div>'+html;bs.hidden=false;bsClose=onClose||null;
+  c.animate([{transform:'translateY(100%)'},{transform:'translateY(-6px)',offset:.8},{transform:'none'}],{duration:340*T,easing:'cubic-bezier(.2,.8,.3,1)'});
+  $('#bsScrim').animate([{opacity:0},{opacity:1}],{duration:220,fill:'both'});c.scrollTop=0;mount&&mount(c)}
+async function closeBS(){const bs=$('#bs');if(bs.hidden)return;const c=$('#bsCard');
+  $('#bsScrim').animate([{opacity:1},{opacity:0}],{duration:200,fill:'forwards'});
+  await c.animate([{transform:'none'},{transform:'translateY(100%)'}],{duration:240*T,easing:'ease-in',fill:'forwards'}).finished.catch(()=>{});
+  bs.hidden=true;c.getAnimations().forEach(a=>a.cancel());$('#bsScrim').getAnimations().forEach(a=>a.cancel());const f=bsClose;bsClose=null;f&&f()}
+$('#bsScrim').onclick=()=>closeBS();
+
+/* ---------- date picker ---------- */
+function datePicker({title,value,max,min='1920-01-01',quick=true,startYears=false,onPick}){
+  let sel=value, base=value||(max&&max<todayStr()?max:todayStr());
+  let [vy,vm]=base.split('-').map(Number), view=startYears?'years':'days', dir=0;
+  const T0=todayStr();
+  const draw=c=>{
+    const body=c.querySelector('.dp-body');let h='';
+    if(view==='days'){
+      const first=new Date(vy,vm-1,1),start=new Date(vy,vm-1,1-first.getDay());
+      h+=`<div class="dp-wk">${'日一二三四五六'.split('').map(x=>`<span>${x}</span>`).join('')}</div><div class="dp-grid">`;
+      for(let i=0;i<42;i++){const d=new Date(start);d.setDate(start.getDate()+i);const s=ymd(d);
+        let lt='';try{const L=X.Solar.fromYmd(d.getFullYear(),d.getMonth()+1,d.getDate()).getLunar();const jq=L.getJieQi();lt=jq||(L.getDay()===1?L.getMonthInChinese()+'月':L.getDayInChinese())}catch(e){}
+        const cls=['dp-day',d.getMonth()+1!==vm?'out':'',s===T0?'today':'',s===sel?'sel':'',(max&&s>max)||s<min?'dis':''].join(' ');
+        h+=`<button type="button" class="${cls}" data-d="${s}"><b>${d.getDate()}</b><small>${lt}</small></button>`}
+      h+='</div>';
+      if(quick)h+=`<div class="dp-quick">${[['今天',0],['昨天',-1],['前天',-2]].map(([n,o])=>{const d=new Date();d.setDate(d.getDate()+o);return`<button type="button" class="chip plain" data-d="${ymd(d)}">${n}</button>`}).join('')}</div>`;
+    }else if(view==='years'){
+      const maxY=max?+max.slice(0,4):new Date().getFullYear()+5,minY=+min.slice(0,4);h+='<div class="dp-years">';
+      for(let y=maxY;y>=minY;y--)h+=`<button type="button" data-y="${y}" aria-pressed="${y===vy}">${y}</button>`;h+='</div>';
+    }else{h+='<div class="dp-months">'+Array.from({length:12},(_,i)=>`<button type="button" data-m="${i+1}" aria-pressed="${i+1===vm}">${i+1}<small style="font-size:12px"> 月</small></button>`).join('')+'</div>'}
+    body.innerHTML=h;
+    c.querySelector('.dp-ym').innerHTML=view==='years'?'选年份':`${vy}<small>年</small>${vm}<small>月</small>${CHEV}`;
+    c.querySelector('.dp-nav').style.visibility=view==='days'?'visible':'hidden';
+    if(dir)body.animate([{opacity:0,transform:`translateX(${dir*24}px)`},{opacity:1,transform:'none'}],{duration:220,easing:'ease-out'});dir=0;
+    if(view==='years'){const on=body.querySelector('[aria-pressed="true"]');on&&on.scrollIntoView({block:'center'})}
+  };
+  openBS(`<div class="bs-title"><h3>${title}</h3><span>${sel?sel.replace(/-/g,'.'):''}</span></div>
+    <div class="dp-head"><button type="button" class="dp-ym"></button><div class="dp-nav"><button type="button" data-nav="-1" aria-label="上个月">${sv('<path d="M15 6l-6 6 6 6"/>')}</button><button type="button" data-nav="1" aria-label="下个月">${sv('<path d="M9 6l6 6-6 6"/>')}</button></div></div>
+    <div class="dp-body"></div>`,c=>{
+    draw(c);
+    c.onclick=e=>{const b=e.target.closest('button');if(!b)return;
+      if(b.classList.contains('dp-ym')){view=view==='days'?'years':'days';draw(c);return}
+      if(b.dataset.nav){vm+=+b.dataset.nav;if(vm<1){vm=12;vy--}if(vm>12){vm=1;vy++}dir=+b.dataset.nav;draw(c);clack(0,.05);return}
+      if(b.dataset.y){vy=+b.dataset.y;view='months';draw(c);return}
+      if(b.dataset.m){vm=+b.dataset.m;view='days';draw(c);return}
+      if(b.dataset.d){sel=b.dataset.d;[vy,vm]=sel.split('-').map(Number);draw(c);clack(0,.1);buzz(8);setTimeout(()=>{closeBS();onPick(sel)},170)}};
+    let sx=null;const g=c.querySelector('.dp-body');
+    g.addEventListener('touchstart',e=>{sx=e.touches[0].clientX},{passive:true});
+    g.addEventListener('touchend',e=>{if(sx==null||view!=='days')return;const dx=e.changedTouches[0].clientX-sx;sx=null;if(Math.abs(dx)>50){const n=dx<0?1:-1;vm+=n;if(vm<1){vm=12;vy--}if(vm>12){vm=1;vy++}dir=n;draw(c)}});
+  });
+}
+const HOURS=[['早子','00–01'],['丑','01–03'],['寅','03–05'],['卯','05–07'],['辰','07–09'],['巳','09–11'],['午','11–13'],['未','13–15'],['申','15–17'],['酉','17–19'],['戌','19–21'],['亥','21–23'],['晚子','23–24']];
+const HOUR_H=[0,2,4,6,8,10,12,14,16,18,20,22,23];
+const hourName=i=>i==null?'不清楚':HOURS[i][0]+(HOURS[i][0].length===1?'时':'时');
+function hourPicker(onPick){
+  const cur=S.profile.hour;
+  openBS(`<div class="bs-title"><h3>出生时辰</h3><span>按出生地钟表时间选</span></div>
+    <div class="hours">${HOURS.map((h,i)=>`<button type="button" data-h="${i}" aria-pressed="${cur===i}">${h[0]}${h[0].length===1?'时':''}<small>${h[1]}</small></button>`).join('')}<button type="button" data-h="" aria-pressed="${cur==null}">不清楚<small>先空着</small></button></div>`,
+    c=>{c.onclick=e=>{const b=e.target.closest('[data-h]');if(!b)return;const v=b.dataset.h===''?null:+b.dataset.h;clack(0,.1);setTimeout(()=>{closeBS();onPick(v)},120)}});
+}
+
+/* ---------- custom add form ---------- */
+function addForm(host,kind,onDone){
+  host.querySelector('.addf')?.remove();
+  const f=document.createElement('div');f.className='addf';
+  let icon=kind==='mood'?'face':'rainbow',color=CUSTOM_COLORS[6],name='';
+  const icons=kind==='mood'?['face','heart','star','spark','music','leaf','moon','drop']:['rainbow','thunder','spark','moon','star','drop','leaf','heart'];
+  const draw=()=>{f.innerHTML=`<input type="text" class="tin" maxlength="5" placeholder="${kind==='mood'?'新心情，比如：想家':'新天气，比如：彩虹'}" value="${esc(name)}">
+    <div class="icopick">${icons.map(k=>`<button type="button" data-i="${k}" aria-pressed="${k===icon}" aria-label="图标">${sv(EXTRA_ICONS[k])}</button>`).join('')}</div>
+    ${kind==='mood'?`<div class="colpick">${CUSTOM_COLORS.map(c=>`<button type="button" data-c="${c}" style="background:${c}" aria-pressed="${c===color}" aria-label="签头颜色"></button>`).join('')}</div>`:''}
+    <div class="bar"><button type="button" class="btn sm" data-x>取消</button><button type="button" class="btn sm primary" data-ok>添加</button></div>`;
+    f.querySelector('input').oninput=e=>name=e.target.value};
+  draw();host.appendChild(f);f.querySelector('input').focus();
+  f.addEventListener('click',e=>{e.stopPropagation();const b=e.target.closest('button');if(!b)return;
+    if(b.dataset.i){icon=b.dataset.i;draw()}
+    else if(b.dataset.c){color=b.dataset.c;draw()}
+    else if(b.hasAttribute('data-x'))f.remove();
+    else if(b.hasAttribute('data-ok')){const t=name.trim();if(!t){const i=f.querySelector('input');i.classList.remove('shake');void i.offsetWidth;i.classList.add('shake');return}
+      const k='c_'+Date.now().toString(36);(kind==='mood'?S.customMoods:S.customWeather).push(kind==='mood'?{k,t,icon,color}:{k,t,icon});saveS();f.remove();toast('加好了：'+t);onDone(k)}});
+}
+
+/* ---------- filter panel ---------- */
+function chipRow(el,label,dict,get,set,kind){
+  el.innerHTML=`<span class="lab">${label}</span><button class="chip plain" data-k="" aria-pressed="${!get()}">全部</button>`+
+   Object.entries(dict).map(([k,v])=>`<button class="chip" data-k="${k}" aria-pressed="${get()===k}">${sv(v.d)}${esc(v.t)}</button>`).join('')+
+   `<button class="chip add" data-add aria-label="自定义">${PLUS}</button>`;
+  el.onclick=e=>{const b=e.target.closest('.chip');if(!b||busy)return;
+    if(b.hasAttribute('data-add')){addForm($('#fPanel'),kind,()=>renderFilters());return}
+    set(b.dataset.k||null);renderFilters();clack(0,.08);renderCup(true)};
+}
+function renderFilters(){
+  const M=MOODS(),W=WEATHER();
+  $('#moodRow').hidden=$('#weatherRow').hidden=mode!=='diary';$('#oracleRow').hidden=mode==='diary';
+  chipRow($('#moodRow'),'心情',M,()=>filters.mood,v=>filters.mood=v,'mood');
+  chipRow($('#weatherRow'),'天气',W,()=>filters.weather,v=>filters.weather=v,'weather');
+  $('#oracleRow').innerHTML=Object.entries(METHODS).map(([k,m])=>`<button class="mopt" data-k="${k}" aria-pressed="${S.method===k}"><b>${m.n}</b><span>${m.need}</span></button>`).join('');
+  $('#oracleRow').onclick=e=>{const b=e.target.closest('.mopt');if(!b||busy||b.dataset.k===S.method)return;setMethod(b.dataset.k)};
+  if(mode==='diary'){$('#fLab').textContent='筛选';$('#fSum').textContent=(filters.mood&&M[filters.mood]?M[filters.mood].t:'全部心情')+' · '+(filters.weather&&W[filters.weather]?W[filters.weather].t:'全部天气')}
+  else{$('#fLab').textContent='签种';$('#fSum').textContent=METHODS[S.method].n}
+}
+async function setMethod(k){S.method=k;saveS();renderFilters();closeFilter();clack(0,.1);await restick()}
+function closeFilter(){const p=$('#fPanel');p.hidden=true;$('#fBtn').setAttribute('aria-expanded','false');p.querySelector('.addf')?.remove()}
+$('#fBtn').onclick=()=>{const p=$('#fPanel');if(!p.hidden){closeFilter();return}p.hidden=false;$('#fBtn').setAttribute('aria-expanded','true');
+  p.animate([{opacity:0,transform:'translateY(-6px) scale(.98)'},{opacity:1,transform:'none'}],{duration:200,easing:'ease-out'})};
+document.addEventListener('pointerdown',e=>{if(!$('#fPanel').hidden&&!e.target.closest('.fbar'))closeFilter()});
+const pool=()=>entries.filter(e=>(!filters.mood||e.moods.includes(filters.mood))&&(!filters.weather||e.weather===filters.weather));
+
+/* ---------- cup: render, rain, swap ---------- */
+const cup=$('#cup');
+function hintHTML(){ if(mode==='oracle') return `${METHODS[S.method].n} · 今天抽了 <b>${drawn.n}</b> 支 · 点签筒起课`;
+  const n=pool().length; return n?`签筒里 <b>${n}</b> 支 · 今天抽了 <b>${drawn.n}</b> 支 · 点一下摇签`:'' }
+function renderCup(animate){
+  const box=$('#sticks'); box.innerHTML='';
+  let show;
+  if(mode==='oracle'){show=Array.from({length:13},(_,i)=>({id:'o'+i,_tip:METHODS[S.method].tip}));$('#emptyCup').hidden=true}
+  else{const p=pool();$('#emptyCup').hidden=p.length>0;show=p.slice().sort(()=>Math.random()-.5).slice(0,13);
+    if(pendingDrop&&p.find(e=>e.id===pendingDrop)&&!show.find(e=>e.id===pendingDrop))show[0]=p.find(e=>e.id===pendingDrop)}
+  const n=show.length;
+  show.forEach((e,i)=>{
+    const s=document.createElement('div');s.className='stick';
+    const x=n>1?-46+92*(i/(n-1)):0, r=(x/46)*9+(Math.random()*4-2), h=172+Math.random()*28;
+    s.style.left=(80+x)+'px';s.style.height=h+'px';s.style.setProperty('--tip',e._tip||tipOf(e));
+    s.style.transform=`rotate(${r}deg)`;s.dataset.r=r;s.dataset.id=e.id;box.appendChild(s);
+    if(animate) s.animate([{transform:`translateY(40px) rotate(${r}deg)`,opacity:0},{transform:`translateY(-6px) rotate(${r}deg)`,opacity:1,offset:.7},{transform:`rotate(${r}deg)`}],{duration:380*T,delay:i*22*T,easing:'ease-out',fill:'backwards'});
+  });
+  $('#hint').innerHTML=hintHTML();
+}
+async function flyOut(){const ss=[...document.querySelectorAll('.stick')];
+  await Promise.all(ss.map((s,i)=>{const r=+s.dataset.r;return s.animate([{transform:`rotate(${r}deg)`,opacity:1},{transform:`translateY(-30px) rotate(${r}deg)`,opacity:1,offset:.25},{transform:`translateY(-${260+Math.random()*120}px) rotate(${r+(Math.random()*80-40)}deg)`,opacity:0}],{duration:420*T,delay:i*18*T,easing:'cubic-bezier(.4,0,.8,.4)',fill:'forwards'}).finished.catch(()=>{})}))}
+async function rain(){
+  const ss=[...document.querySelectorAll('.stick')];const step=55*T,dur=560*T;
+  const ps=ss.map((s,i)=>{const r=+s.dataset.r,k=(Math.random()*50-25);
+    return s.animate([{transform:`translateY(-380px) rotate(${r+k}deg)`,opacity:0},{opacity:1,offset:.12},{transform:`translateY(14px) rotate(${r}deg)`,offset:.72},{transform:`translateY(-10px) rotate(${r-k*.08}deg)`,offset:.86},{transform:`rotate(${r}deg)`}],{duration:dur,delay:i*step,easing:'cubic-bezier(.5,0,.75,0)',fill:'backwards'}).finished.catch(()=>{})});
+  ss.forEach((s,i)=>clack((i*step+dur*.72)/1000,.08+Math.random()*.08));
+  setTimeout(()=>{buzz(15);cup.animate([{transform:'none'},{transform:'translateY(5px) scale(1.04,.95)'},{transform:'none'}],{duration:260,easing:'ease-out'})},ss.length*step+dur*.6);
+  await Promise.all(ps)}
+async function restick(){busy=true;try{await flyOut();renderCup(false);await rain()}finally{busy=false}}
+async function swapCup(){
+  busy=true;try{await swapInner()}finally{busy=false}}
+async function swapInner(){
+  closeFilter();
+  await flyOut();
+  await cup.animate([{transform:'none',opacity:1},{transform:'translateX(-150%) rotate(-16deg)',opacity:0}],{duration:340*T,easing:'cubic-bezier(.5,0,.8,.4)',fill:'forwards'}).finished.catch(()=>{});
+  $('#sticks').innerHTML='';applyCup();renderFilters();
+  await cup.animate([{transform:'translateX(150%) rotate(16deg)',opacity:0},{transform:'translateX(-6%) rotate(-4deg)',opacity:1,offset:.7},{transform:'none',opacity:1}],{duration:460*T,easing:'cubic-bezier(.2,.8,.3,1)',fill:'forwards'}).finished.catch(()=>{});
+  cup.getAnimations().forEach(a=>a.cancel());
+  renderCup(false);await rain()}
+function idle(){ if(busy||$('#v-draw').hidden||!$('#ov').hidden||!$('#bs').hidden)return; const ss=[...document.querySelectorAll('.stick')]; if(!ss.length)return; const s=rnd(ss),r=+s.dataset.r;
+  s.animate([{transform:`rotate(${r}deg)`},{transform:`translateY(-10px) rotate(${r+3}deg)`},{transform:`translateY(-2px) rotate(${r-2}deg)`},{transform:`rotate(${r}deg)`}],{duration:620,easing:'ease-in-out'});}
+if(!RM) setInterval(idle,4000);
+
+function setMode(m){mode=m;$('#seg').dataset.m=m;$('#seg').querySelectorAll('button').forEach(x=>x.setAttribute('aria-selected',x.dataset.m===m));cup.setAttribute('aria-label',m==='diary'?'摇签筒，抽一篇日记':'摇签筒，起课')}
+$('#seg').onclick=e=>{const b=e.target.closest('button');if(!b||busy||b.dataset.m===mode)return;setMode(b.dataset.m);clack(0,.12);buzz(10);swapCup()};
+
+const canDraw=()=>mode==='oracle'||pool().length>0;
+cup.addEventListener('pointerdown',()=>{ if(busy||!canDraw())return; ac(); cup.animate([{transform:'none'},{transform:'translateY(5px) scale(1.04,.95)'}],{duration:120,easing:'ease-out',fill:'forwards'});
+  document.querySelectorAll('.stick').forEach(s=>s.animate([{transform:`rotate(${s.dataset.r}deg)`},{transform:`translateY(-8px) rotate(${s.dataset.r}deg)`}],{duration:140,fill:'forwards',easing:'ease-out'}));});
+const release=()=>{ if(busy)return; cup.getAnimations().forEach(a=>a.cancel()); document.querySelectorAll('.stick').forEach(s=>s.getAnimations().forEach(a=>a.cancel())); };
+cup.addEventListener('pointerleave',release);cup.addEventListener('pointercancel',release);
+cup.addEventListener('click',()=>{ if(busy)return; if(mode==='oracle'){release();askOracle()} else drawDiary() });
+
+function drawDiary(){
+  const p=pool(); if(!p.length)return;
+  let cand=p.filter(e=>!recent.includes(e.id)); if(!cand.length)cand=p;
+  const chosen=rnd(cand); recent.push(chosen.id); recent=recent.slice(-Math.min(3,Math.max(0,p.length-1)));
+  const sticks=[...document.querySelectorAll('.stick')];let el=sticks.find(s=>s.dataset.id===chosen.id); if(!el){el=rnd(sticks);el.dataset.id=chosen.id}
+  shakeAndOpen(el,tipOf(chosen),{html:cardHTML(chosen),stamp:stampFor(chosen)});
+}
+async function shakeAndOpen(el,tip,content){
+  if(busy)return; busy=true;
+  cup.getAnimations().forEach(a=>a.cancel());
+  document.querySelectorAll('.stick').forEach(s=>s.getAnimations().forEach(a=>a.cancel()));
+  const sticks=[...document.querySelectorAll('.stick')];
+  el.style.setProperty('--tip',tip);
+  await cup.animate([{transform:'translateY(5px) scale(1.04,.95)'},{transform:'translateY(-6px) scale(.97,1.04)'}],{duration:130*T,easing:'cubic-bezier(.3,1.6,.6,1)'}).finished.catch(()=>{});
+  const D=1050*T;
+  const sh=cup.animate([0,-14,12,-11,9,-8,6,-4,2,0].map((a,i)=>({transform:`translateY(${i%2?-4:0}px) rotate(${a}deg)`})),{duration:D,easing:'ease-in-out'});
+  sticks.forEach(s=>{const r=+s.dataset.r,k=[];for(let i=0;i<9;i++)k.push({transform:`translateY(${i%2?-(6+Math.random()*(s===el?30:16)):0}px) rotate(${r+(Math.random()*8-4)}deg)`});k.push({transform:`rotate(${r}deg)`});s.animate(k,{duration:D,delay:Math.random()*60,easing:'ease-in-out'})});
+  for(let i=0;i<14;i++)clack(i*D/1000/14+Math.random()*.04,.12+Math.random()*.14);
+  buzz([18,50,14,60,18,50,12,70,24]);
+  await sh.finished.catch(()=>{});
+  pop(); buzz(30);
+  const app=$('#app').getBoundingClientRect(), r=el.getBoundingClientRect(), H=el.offsetHeight, ang=+el.dataset.r;
+  const ov=$('#ov'); ov.hidden=false; $('#stage').innerHTML=''; $('#nact').innerHTML='';
+  $('#scrim').animate([{opacity:0},{opacity:1}],{duration:420*T,fill:'both'});
+  const fly=document.createElement('div'); fly.className='fly';
+  fly.style.height=H+'px'; fly.style.left=(r.left+r.width/2-app.left-5.5)+'px'; fly.style.top=(r.top+r.height/2-app.top-H/2)+'px';
+  fly.style.setProperty('--tip',tip); ov.appendChild(fly); el.style.visibility='hidden';
+  cup.animate([{transform:'none'},{transform:'translateY(6px) scale(1.03,.96)'},{transform:'none'}],{duration:300*T,easing:'ease-out'});
+  const cx=app.width/2-(r.left+r.width/2-app.left), cy=(app.height-90)/2-(r.top+r.height/2-app.top);
+  await fly.animate([
+    {transform:`translate(0,0) rotate(${ang}deg)`,easing:'cubic-bezier(.2,.9,.3,1.25)'},
+    {transform:`translate(0,-130px) rotate(${-ang*.6}deg)`,offset:.42,easing:'cubic-bezier(.65,0,.35,1)'},
+    {transform:`translate(${cx}px,${cy}px) rotate(90deg) scale(1.25)`}
+  ],{duration:820*T,fill:'forwards'}).finished.catch(()=>{});
+  fly.animate([{opacity:1},{opacity:0,transform:`translate(${cx}px,${cy}px) rotate(90deg) scale(1.5,.6)`}],{duration:220*T,fill:'forwards'}).onfinish=()=>fly.remove();
+  drawn.n++; ls.set(KEY+'.today',drawn);
+  busy=false;
+  await openNote({...content,stickEl:el});
+}
+
+/* ---------- diary card ---------- */
+function stampFor(e){const M=MOODS();const k=(e.moods||[]).find(k=>M[k]);return k?sv(M[k].d):'记'}
+function cardHTML(e){
+  const f=fmt(e.date),M=MOODS(),W=WEATHER(), w=W[e.weather]||W.sunny, ms=(e.moods||[]).filter(k=>M[k]);
+  const tags=`<span class="tag">${sv(w.d)}${esc(w.t)}</span>`+
+    (ms.length?ms.map(k=>`<span class="tag" style="background:color-mix(in srgb, ${M[k].c} 32%, var(--paper))">${sv(M[k].d)}${esc(M[k].t)}</span>`).join(''):'<span class="tag none">心情 · 无</span>');
+  const td=e.todos||[];
+  const todos=td.length?`<div class="n-sub">这一天做了 · ${td.filter(t=>t.done).length}/${td.length}</div><ul class="n-todo">${td.map(t=>`<li class="${t.done?'':'undone'}"><i>${t.done?'✓':'○'}</i><span class="nm">${esc(t.name)}</span><span class="mt">${[t.type,t.time,fmtMin(t.minutes)].filter(Boolean).map(esc).join(' · ')}</span></li>`).join('')}</ul>`:'';
+  return `<span class="tape"></span>
+   <div class="n-date"><span class="md">${f.md}</span><span class="yw">${f.y} 年 · 周${f.wd} · ${lunarText(e.date)}</span></div>
+   <div class="n-tags">${tags}</div>
+   ${e.text?`<p class="n-text">${esc(e.text)}</p>`:''}${todos}
+   <div class="n-foot"><span class="ago">${ago(e.date)}</span><span style="display:flex;gap:4px">${td.length?'<span class="badge">每日List</span>':''}${e.sample?'<span class="badge">示例</span>':''}</span></div>`;
+}
+
+/* =====================================================================
+   玄学签：每种方法都按固定的起课规则计算，不用随机数
+   ===================================================================== */
+const GAN='甲乙丙丁戊己庚辛壬癸',ZHI='子丑寅卯辰巳午未申酉戌亥';
+const WXG={甲:'木',乙:'木',丙:'火',丁:'火',戊:'土',己:'土',庚:'金',辛:'金',壬:'水',癸:'水'};
+const WXZ={子:'水',丑:'土',寅:'木',卯:'木',辰:'土',巳:'火',午:'火',未:'土',申:'金',酉:'金',戌:'土',亥:'水'};
+const SHENG={木:'火',火:'土',土:'金',金:'水',水:'木'},KE={木:'土',土:'水',水:'火',火:'金',金:'木'};
+const isYang=g=>GAN.indexOf(g)%2===0;
+function shishen(dm,g){const a=WXG[dm],b=WXG[g],same=isYang(dm)===isYang(g);
+  if(a===b)return same?'比肩':'劫财';if(SHENG[a]===b)return same?'食神':'伤官';if(KE[a]===b)return same?'偏财':'正财';if(KE[b]===a)return same?'七杀':'正官';return same?'偏印':'正印'}
+const SHISHEN_DESC={比肩:'与日主同五行、同阴阳。通行释义：自我、同辈、并肩之力。',劫财:'与日主同五行、异阴阳。通行释义：竞争、分夺、人情花费。',食神:'日主所生、同阴阳。通行释义：表达、口福、闲适。',伤官:'日主所生、异阴阳。通行释义：才华外露、锋芒、变动。',偏财:'日主所克、同阴阳。通行释义：流动之财、机遇、交际。',正财:'日主所克、异阴阳。通行释义：稳定之财、勤勉、务实。',七杀:'克日主、同阴阳。通行释义：压力、挑战、魄力。',正官:'克日主、异阴阳。通行释义：规矩、名誉、责任。',偏印:'生日主、同阴阳。通行释义：偏门学问、独思、灵感。',正印:'生日主、异阴阳。通行释义：庇护、学习、长辈助力。'};
+const CHONG={子:'午',午:'子',丑:'未',未:'丑',寅:'申',申:'寅',卯:'酉',酉:'卯',辰:'戌',戌:'辰',巳:'亥',亥:'巳'};
+const HE6={子:'丑',丑:'子',寅:'亥',亥:'寅',卯:'戌',戌:'卯',辰:'酉',酉:'辰',巳:'申',申:'巳',午:'未',未:'午'};
+const nowLunar=()=>X.Solar.fromDate(new Date()).getLunar();
+const lunarStamp=L=>`农历${L.getMonthInChinese()}月${L.getDayInChinese()} · ${L.getTimeZhi()}时`;
+const qline=(t,c)=>`<div class="quote">${t}${c?`<cite>${c}</cite>`:''}</div>`;
+const lvl=(t,k)=>`<span class="lvl ${k}">${t}</span>`;
+
+/* ---- 大白话 ---- */
+const plainBox=t=>`<div class="plain">${t}</div>`;
+const XLR_PLAIN=[
+ {综合:'大安是六宫里最稳的一宫，事事顺当。适合按原计划、稳稳当当地办，最后一句提醒细节还要再仔细想想。',失物:'东西没丢远，多半就在附近。',行人:'等的人还没动身。',求财:'想谋的事，往东边去求。',疾病:'病情不碍事。',官事:'歌诀没专门讲官事；大安主平稳，可以按平稳来看。',家宅:'家里平安。'},
+ {综合:'事情拖拖拉拉、一时难成，眼下还看不清楚。要防口舌是非，人际上平平。',失物:'往南边找能找到；要追讨的东西，抓紧去讨才能如愿。',行人:'出门的人已经在回来的路上。',求财:'所谋之事还不明朗，一时难成。',疾病:'歌诀没专门讲疾病；留连主拖延，事情容易反复。',官事:'公事官司只宜放慢，别急。',家宅:'歌诀没专门讲家宅；人事平平。'},
+ {综合:'喜事很快就到，事情进展快、顺利。',失物:'往申、未、午方（大致西南到正南）找，可以在路上问问人。',行人:'出门的人有消息了。',求财:'求财往南边去。',疾病:'病人没有大碍。',官事:'官事有福气照应。',家宅:'家宅、家畜都吉。'},
+ {综合:'主口舌争执，要特别防官非和是非，家里也容易出些怪事，凡事小心说话。',失物:'赶紧去找，晚了更难找。',行人:'出门的人路上会受些惊吓。',求财:'歌诀没专门讲求财；赤口主口舌是非。',疾病:'原句是「病者出西方」，并提醒防染时疫。',官事:'官非一定要防。',家宅:'家里鸡犬作怪，不太安宁。'},
+ {综合:'很吉利，事情好商量，会有女性来报喜，凡事和和气气就能成。',失物:'往西南（坤方）找。',行人:'出门的人马上就到。',求财:'交易买卖很顺。',疾病:'原句是「病者祈上苍」，病人宜祈福求安。',官事:'歌诀没专门讲官事；小吉主凡事和合。',家宅:'歌诀没专门讲家宅；小吉主凡事和合。'},
+ {综合:'不吉，事情容易落空；和女性相关的事多别扭不顺。',失物:'东西不容易找回来。',行人:'出门的人路上可能有灾。',求财:'求财没有收益。',疾病:'病人像遇到暗中作祟，化解之后可以安康。',官事:'官事有刑伤。',家宅:'歌诀没专门讲家宅；空亡主落空不祥。'}];
+const GUA_PLAIN={乾:'刚健，自强不息',坤:'柔顺，厚德承载',屯:'万事开头难，刚起步多艰难',蒙:'蒙昧待启，需要请教与学习',需:'等待时机，不宜冒进',讼:'争执诉讼，宜和解不宜争到底',师:'兴众用兵，讲纪律、靠众人',比:'亲近依附，彼此相助',小畜:'小有积蓄，力量还不够大',履:'小心行事，如履虎尾',泰:'通泰顺畅，上下相通',否:'闭塞不通，宜守不宜进',同人:'与人同心，合作共事',大有:'丰收富有，所得甚多',谦:'谦逊退让，反而受益',豫:'安乐愉悦，事先有准备',随:'随顺时势，跟随他人',蛊:'积弊需整治，拨乱反正',临:'临近与监临，好事将至',观:'观察审视，先看清再说',噬嗑:'咬合除障，明断是非',贲:'文饰装点，重外表也要重内在',剥:'剥落衰退，宜静守',复:'回复归来，重新开始',无妄:'不妄为，顺其自然',大畜:'大有积蓄，厚积薄发',颐:'颐养，注意口舌饮食与修养',大过:'过度失衡，负担太重',坎:'重重险阻，守信可过',离:'附丽光明，依附正道',咸:'感应相通，彼此有感',恒:'持久不变，贵在坚持',遯:'退避隐让，以退为进',大壮:'强盛之时，忌用强过头',晋:'上进晋升，光明在前',明夷:'光明受伤，宜韬光养晦',家人:'家道，各守其位',睽:'乖离不合，求同存异',蹇:'行路艰难，宜止步求助',解:'困难缓解，宜速了结',损:'减损，舍小得大',益:'增益，助人亦助己',夬:'决断，果断除去阻碍',姤:'不期而遇，相遇之时',萃:'聚集，人与物汇聚',升:'逐步上升，稳中求进',困:'困穷受限，守正待时',井:'井养不穷，持续供给',革:'变革，去旧换新',鼎:'鼎新，确立新局',震:'震动惊惧，警醒反省',艮:'止，适可而止',渐:'循序渐进，不可急',归妹:'婚嫁之象，名分要正',丰:'丰盛到顶，盛极要防衰',旅:'羁旅在外，处处谨慎',巽:'顺而能入，柔和渗透',兑:'喜悦，和颜沟通',涣:'涣散，需要重新凝聚',节:'节制，有度而止',中孚:'诚信在心，以诚动人',小过:'小有过越，宜小事不宜大事',既济:'事已办成，守成防乱',未济:'事未完成，仍需努力'};
+const TI_PLAIN={旺:'体卦在这个季节当令而旺，你这边底气足。',衰:'体卦在这个季节失令而衰，你这边力量偏弱，要多给自己留余地。',不旺不衰:'体卦在这个季节不旺不衰，底气一般。'};
+const REL_PLAIN={体克用:'体克用：你能压得住所问之事，书上算吉。',用克体:'用克体：所问之事反过来压着你，书上算凶。',体生用:'体生用：你在往外付出、消耗，书上说有耗失之患。',用生体:'用生体：所问之事在帮你、给你助力，书上说有进益之喜。',体用比和:'体用比和：你和所问之事五行相同，书上说百事顺遂。'};
+const LQ_PLAIN={官鬼:'压力、官事、病痛这类事',父母:'文书、长辈、房屋这类事',妻财:'钱财、收入这类事',子孙:'喜事、晚辈、化解烦忧这类事',兄弟:'同辈、竞争、花钱这类事'};
+const JIANG_PLAIN={贵人:'有尊长贵人相助',腾蛇:'有惊扰、怪异之事',螣蛇:'有惊扰、怪异之事',朱雀:'有文书或口舌',六合:'有和合、交易之事',勾陈:'有纠缠、迟滞',青龙:'有财喜',天空:'虚而不实，防空口许诺',白虎:'防伤损、疾病',太常:'有吃喝、衣物、礼节之事',玄武:'防失窃、暗昧之事',太阴:'有隐秘、私下之事',天后:'有女性相助或恩泽'};
+const SS_PLAIN={比肩:'今天的能量和你同类，适合靠自己、和同伴一起做事，也容易各自坚持己见。',劫财:'今天和你同类但阴阳相反，常说主竞争、分走资源，花钱和人情往来要多留心。',食神:'今天是你“生出去”的力量，适合表达、享受、放松一下。',伤官:'今天也是你“生出去”的力量，但更锋利，想法多、表达欲强，说话要注意分寸。',偏财:'今天是你能掌控的财，偏向机会和人际带来的流动之财。',正财:'今天是你能掌控的财，偏向踏实工作换来的稳定收入，适合务实做事。',七杀:'今天的力量在克你，而且来势较猛，压力和挑战偏多，也是逼出魄力的时候。',正官:'今天的力量在约束你，讲规矩、讲责任，适合按章办事、维护名声。',偏印:'今天的力量在生扶你，偏向独自思考、钻研冷门的东西。',正印:'今天的力量在生扶你，像有人照顾、托底，适合学习、休整、向长辈请教。'};
+const ZX_PLAIN={建:'建日，适合开始新事情、出行',除:'除日，适合除旧、打扫、治病',满:'满日，主丰满',平:'平日，各方面平平',定:'定日，适合定下事情、签约',执:'执日，适合执守、收拾整理',破:'破日，大事一般不宜办',危:'危日，凡事小心谨慎',成:'成日，诸事易成',收:'收日，适合收获、收账',开:'开日，适合开张、开始',闭:'闭日，宜收藏，不宜大动'};
+
+/* ---- 小六壬 ---- */
+const XLR=[
+ {n:'大安',j:'吉',v:'大安事事昌，求谋在东方，失物去不远。宅舍保平安，行人身未动，病者主无妨，将军回田野，仔细更推详。'},
+ {n:'留连',j:'凶',v:'留连事难成，求谋日未明，官事只宜缓。去者来回程，失物南方见，急讨方遂心。更需防口舌，人事且平平。'},
+ {n:'速喜',j:'吉',v:'速喜喜来临，求财向南行，失物申未午，逢人路上寻。官事有福德，病者无祸侵，田宅六畜吉，行人有音信。'},
+ {n:'赤口',j:'凶',v:'赤口主口舌，官非切要防，失物急去寻，行人有惊慌。鸡犬多作怪，病者出西方，更须防咀咒，恐怕染瘟殃。'},
+ {n:'小吉',j:'吉',v:'小吉最吉昌，路上好商量，阴人来报喜。失物在坤方，行人立便至，交易甚是强，凡事皆和合，病者祈上苍。'},
+ {n:'空亡',j:'凶',v:'空亡事不祥，阴人多乖张，求财无利益。行人有灾殃，失物寻不见，官事有刑伤，病人逢暗鬼，析解可安康。'}];
+const QDESC={综合:'不限定哪一类事，看这件事整体顺不顺。',失物:'东西丢了，问能不能找回、往哪个方向找。',行人:'在等的人、出门在外的人，什么时候回来或到达。',求财:'想赚钱、谈生意、谋一件事，能不能如愿。',疾病:'自己或家人身体不舒服，问病情轻重。',官事:'官司、公事，和单位、机构打交道的事。',家宅:'家里、住处安不安宁。',
+  人事:'日常人际和办事，拿不准归哪类时就选它。',求谋:'谋划一件事，问能不能成、成得快慢。',求名:'考试、升职、评选、名声。',交易:'买卖、签约、谈价钱。',出行:'要出门、旅行，问路上顺不顺。',谒见:'去见某个人，问见不见得到、有没有收获。',婚姻:'恋爱、婚事能不能成。',天时:'问天气，看晴还是雨。',饮食:'饭局、吃喝能不能成、丰不丰盛。'};
+const QDESC_MH={求财:'求财、赚钱，问有没有财、会不会损耗。',行人:'等的人、出门在外的人什么时候回来。',失物:'东西丢了，问能不能找回。',家宅:'家里安不安稳，有进益还是有破耗。',疾病:'身体不舒服，问病情走向、好不好治。'};
+const XLR_Q={综合:null,失物:/失物/,行人:/行人|去者/,求财:/求财|求谋|交易/,疾病:/病/,官事:/官/,家宅:/宅|田宅/};
+function xlrPlain(i,q){const P=XLR_PLAIN[i],g=XLR[i];let t=`<p>落在<b>${g.n}</b>，${g.j}。${P.综合}</p>`;
+  if(q&&q!=='综合')t=`<p>问${q}：<b>${P[q]}</b></p>`+t;
+  else t+=`<p class="sub">${['失物','行人','求财','疾病'].map(k=>k+'：'+P[k]).join(' ')}</p>`;return t}
+function castXLR(o){
+  const L=nowLunar();let steps;
+  if(o.how==='num'){const [a,b,c]=o.nums;const i1=(a-1)%6,i2=(i1+b-1)%6,i3=(i2+c-1)%6;steps=[[`一数 ${a}`,i1],[`二数 ${b}`,i2],[`三数 ${c}`,i3]]}
+  else{const m=Math.abs(L.getMonth()),d=L.getDay(),h=ZHI.indexOf(L.getTimeZhi())+1;const i1=(m-1)%6,i2=(i1+d-1)%6,i3=(i2+h-1)%6;
+    steps=[[`${L.getMonthInChinese()}月`,i1],[L.getDayInChinese(),i2],[`${L.getTimeZhi()}时`,i3]]}
+  const g=XLR[steps[2][1]],re=XLR_Q[o.q];
+  const verse=g.v.split(/(?<=[，。])/).map(p=>re&&re.test(p)?`<mark>${p}</mark>`:p).join('');
+  const html=`<span class="tape"></span>
+   <div class="o-head"><span class="o-title">小六壬</span><span class="badge">${o.how==='num'?'报数起课':'时间起课'}</span></div>
+   <div class="o-meta">${todayStr().replace(/-/g,'.')} · ${lunarStamp(L)}</div>
+   <div class="path">${steps.map((s,i)=>`${i?'→':''}<small>${s[0]}</small><span class="${i===2?'on':''}">${XLR[s[1]].n}</span>`).join(' ')}</div>
+   <div class="o-big">${g.n}${lvl(g.j,g.j==='吉'?'good':'bad')}</div>
+   ${o.ask?`<div class="ask">所问：<b>${esc(o.ask)}</b></div>`:''}
+   ${plainBox(xlrPlain(steps[2][1],o.q))}
+   <div class="verse">${verse}</div>
+   ${re?`<div class="ask">已标出与「${o.q}」相关的句子。</div>`:''}
+   <div class="sec"><h4>起课规则</h4><p>${o.how==='num'?'从大安起数第一个数，落宫处起数第二个数，再起数第三个数，顺数六宫（大安、留连、速喜、赤口、小吉、空亡）。':'正月起大安，月上起日，日上起时，顺数六宫（大安、留连、速喜、赤口、小吉、空亡）。'}末宫即所得。</p></div>
+   <div class="n-foot"><span>歌诀为民间通行本，各本字句略有出入</span><span class="badge">小六壬</span></div>`;
+  return {html,stamp:'壬'};
+}
+
+/* ---- 梅花易数 ---- */
+const XT={1:'乾',2:'兑',3:'离',4:'震',5:'巽',6:'坎',7:'艮',8:'坤'};
+const TRI={乾:'111',兑:'110',离:'101',震:'100',巽:'011',坎:'010',艮:'001',坤:'000'};
+const TRI_X={乾:'天',兑:'泽',离:'火',震:'雷',巽:'风',坎:'水',艮:'山',坤:'地'};
+const TRI_WX={乾:'金',兑:'金',离:'火',震:'木',巽:'木',坎:'水',艮:'土',坤:'土'};
+const byBits=b=>Object.keys(TRI).find(k=>TRI[k]===b);
+const guaName=bits=>{const lo=byBits(bits.slice(0,3)),hi=byBits(bits.slice(3));const nm=D.GUA[bits][0];return lo===hi?`${hi}为${TRI_X[hi]}`:`${TRI_X[hi]}${TRI_X[lo]}${nm}`};
+const stripName=t=>t.replace(/^[^：]{1,3}：/,'');
+const hexHTML=(bits,mv)=>`<div class="hex">${bits.split('').reverse().map((b,i)=>`<i class="${b==='1'?'y':''}${6-i===mv?' mv':''}"></i>`).join('')}</div>`;
+const MH_CATS=['人事','求谋','求财','求名','交易','出行','行人','谒见','失物','婚姻','家宅','疾病','天时','饮食'];
+function castMH(o){
+  const L=nowLunar(),hz=ZHI.indexOf(L.getTimeZhi())+1;let up,low,mv,how;
+  if(o.how==='num'){const [a,b]=o.nums;
+    if(b){up=a%8||8;low=b%8||8;mv=(a+b+hz)%6||6;how=`报两数：${a} 为上卦，${b} 为下卦，${a}+${b}+时数${hz}=${a+b+hz}，除六取动爻`}
+    else{up=a%8||8;low=hz%8||8;mv=(a+hz)%6||6;how=`报一数：${a} 为上卦，时数 ${hz}（${L.getTimeZhi()}）为下卦，${a}+${hz}=${a+hz}，除六取动爻`}}
+  else{const y=ZHI.indexOf(L.getYearZhi())+1,m=Math.abs(L.getMonth()),d=L.getDay(),s=y+m+d;up=s%8||8;low=(s+hz)%8||8;mv=(s+hz)%6||6;
+    how=`年支${L.getYearZhi()}(${y}) + ${L.getMonthInChinese()}月(${m}) + ${L.getDayInChinese()}(${d}) = ${s}，除八得上卦；加${L.getTimeZhi()}时(${hz}) = ${s+hz}，除八得下卦，除六得动爻`}
+  const U=XT[up],Lo=XT[low],bits=TRI[Lo]+TRI[U];
+  const chg=bits.split('');chg[mv-1]=chg[mv-1]==='1'?'0':'1';const bian=chg.join('');const hu=bits.slice(1,4)+bits.slice(2,5);
+  const ti=mv<=3?U:Lo, yong=mv<=3?Lo:U, a=TRI_WX[ti], b=TRI_WX[yong];
+  const rel=a===b?'体用比和':KE[a]===b?'体克用':KE[b]===a?'用克体':SHENG[a]===b?'体生用':'用生体';
+  const relK={体用比和:'good',体克用:'good',用生体:'good',体生用:'mid',用克体:'bad'}[rel];
+  const mz=L.getMonthZhi(),season='寅卯'.includes(mz)?'春':'巳午'.includes(mz)?'夏':'申酉'.includes(mz)?'秋':'亥子'.includes(mz)?'冬':'四季月';
+  const WANG={春:['震','巽'],夏:['离'],秋:['乾','兑'],冬:['坎'],四季月:['坤','艮']},SHUAI={春:['坤','艮'],夏:['乾','兑'],秋:['震','巽'],冬:['离'],四季月:['坎']};
+  const tiState=WANG[season].includes(ti)?'旺':SHUAI[season].includes(ti)?'衰':'不旺不衰';
+  const G=D.GUA[bits],GB=D.GUA[bian],cat=D.MHCAT[o.q]||D.MHCAT['人事'];
+  const html=`<span class="tape"></span>
+   <div class="o-head"><span class="o-title">梅花易数</span><span class="badge">占${o.q}</span></div>
+   <div class="o-meta">${todayStr().replace(/-/g,'.')} · ${lunarStamp(L)}</div>
+   ${o.ask?`<div class="ask">所问：<b>${esc(o.ask)}</b></div>`:''}
+   <div class="guas">
+     <div class="gua main">${hexHTML(bits,mv)}<b>${guaName(bits)}</b>本卦</div>
+     <div class="gua">${hexHTML(hu,0)}<b>${guaName(hu)}</b>互卦</div>
+     <div class="gua">${hexHTML(bian,0)}<b>${guaName(bian)}</b>变卦</div>
+     <div class="gua"><b style="font-size:20px">${['初','二','三','四','五','上'][mv-1]}</b>动爻</div>
+   </div>
+   <div class="o-big" style="font-size:24px">${rel}${lvl(relK==='good'?'吉':relK==='bad'?'凶':'耗',relK)}</div>
+   <div class="ask">体卦 <b>${ti}${TRI_WX[ti]}</b>（${season}${tiState}） · 用卦 <b>${yong}${TRI_WX[yong]}</b></div>
+   ${plainBox(`<p>体卦代表你，用卦代表${o.ask?'「'+esc(o.ask)+'」':'你问的事'}。${ti}属${TRI_WX[ti]}，${yong}属${TRI_WX[yong]}，${REL_PLAIN[rel]}${TI_PLAIN[tiState]}</p><p>本卦「${guaName(bits)}」讲的是${GUA_PLAIN[G[0]]||''}；事情中间的状态看互卦「${guaName(hu)}」：${GUA_PLAIN[D.GUA[hu][0]]||''}；最后的走向看变卦「${guaName(bian)}」：${GUA_PLAIN[GB[0]]||''}。</p>`)}
+   <div class="sec"><h4>占${o.q}</h4>${qline(cat[0],'《梅花易数》'+cat[2].replace('梅花易数·',''))}${cat[1]?`<p style="font-size:12.5px;color:var(--ink-2)">白话：${cat[1]}</p>`:''}</div>
+   <div class="sec"><h4>本卦卦辞</h4>${qline(`${G[0]}：${stripName(G[1])}`,'《周易》')}${qline(G[2],'《象》')}</div>
+   <div class="sec"><h4>动爻爻辞</h4>${qline(G[3][mv-1],'《周易》')}</div>
+   <div class="sec"><h4>变卦卦辞 · 事之末应</h4>${qline(`${GB[0]}：${stripName(GB[1])}`,'《周易》')}</div>
+   <div class="sec"><h4>起卦</h4><p style="font-size:12.5px">${how}。动爻在${mv<=3?'下':'上'}卦，故${mv<=3?'下':'上'}卦为用、${mv<=3?'上':'下'}卦为体。</p>${qline(D.MH_ZONG,'《梅花易数》卷二 · 體用總訣')}</div>
+   <div class="n-foot"><span>体用、卦气以《梅花易数》为据</span><span class="badge">梅花易数</span></div>`;
+  return {html,stamp:'梅'};
+}
+
+/* ---- 大六壬 ---- */
+const KETI={元首:'四课中只有一课上克下，取之为初传。',重审:'四课中只有一课下贼上，取之为初传。',知一:'有两课以上克贼，取与日干阴阳相比者为用。',比用:'有两课以上克贼，取与日干阴阳相比者为用。',涉害:'克贼俱比或俱不比，取涉害深者为用。',遥克:'四课无克贼，取上神与日干遥相克者为用（神克日为蒿矢，日克神为弹射）。',昴星:'四课无克又无遥克，阳日取地盘酉上神、阴日取天盘酉下神为初传。',别责:'四课不全（只得三课）又无克，阳日取干合之神、阴日取支前三合为用。',八专:'干支同位，四课只得两课。',伏吟:'月将加时同位，天地盘不动。',反吟:'天地盘六冲，天盘与地盘相对。'};
+const JI_JIANG=['贵人','六合','青龙','太常','太阴','天后'];
+const LIUQIN={官鬼:'克日干者',父母:'生日干者',妻财:'日干所克',子孙:'日干所生',兄弟:'与日干同五行'};
+function dlrPlain(r,kong){const parts=[['开头','chuChuan'],['过程中','zhongChuan'],['最后','moChuan']].map(([n,k])=>{const v=r.sanChuan[k];
+    return `${n}落在${v[0]}，牵涉${LQ_PLAIN[v[2]]||v[2]}，遇${v[1]}（${JI_JIANG.includes(v[1])?'吉将':'凶将'}），${JIANG_PLAIN[v[1]]||''}${kong.includes(v[0])?'；这一步落空亡，多半虚而不实':''}`});
+  const good=['chuChuan','zhongChuan','moChuan'].filter(k=>JI_JIANG.includes(r.sanChuan[k][1])).length;
+  return `<p>${parts.join('。<br>')}。</p><p class="sub">三传里吉将 ${good} 个、凶将 ${3-good} 个。末传看归结，最后一步最要紧。</p>`}
+function castDLR(o){
+  const now=new Date(),r=X.getLiuRenByDate(now),L=nowLunar(),di=r.dateInfo,kong=di.kong||[];
+  const kts=String(r.sanChuan.keTi||'').split('·');const kt=kts[0];
+  const ke=['ke1','ke2','ke3','ke4'].map((k,i)=>{const v=r.siKe[k];return`<div>${v[0][0]}<br>${v[0][1]}<small>${['一','二','三','四'][i]}课 · ${v[1]}</small></div>`}).join('');
+  const ch=[['初传','chuChuan','事之始'],['中传','zhongChuan','事之中'],['末传','moChuan','事之终']].map(([n,k,m])=>{const v=r.sanChuan[k];const empty=kong.includes(v[0]);
+    return`<div><small>${n}</small><b>${v[0]}</b><span>${v[1]} ${lvl(JI_JIANG.includes(v[1])?'吉将':'凶将',JI_JIANG.includes(v[1])?'good':'bad')}${empty?' '+lvl('空亡','mid'):''}</span><small>${v[2]}${v[3]?' · 遁'+v[3]:''}</small></div>`}).join('');
+  const html=`<span class="tape"></span>
+   <div class="o-head"><span class="o-title">大六壬</span><span class="badge">${esc(r.sanChuan.keTi||'')}课</span></div>
+   <div class="o-meta">${di.bazi} · 月将${di.yuejiang} · ${di.xun}旬 · 空亡${kong.join('')}</div>
+   ${o.ask?`<div class="ask">所问：<b>${esc(o.ask)}</b></div>`:''}
+   ${plainBox(dlrPlain(r,kong))}
+   <div class="sec"><h4>四课（上为天盘神，下为干支）</h4><div class="ke">${ke}</div></div>
+   <div class="sec"><h4>三传</h4><div class="chuan">${ch}</div></div>
+   <div class="sec"><h4>课体 · ${esc(kt)}</h4><p>${KETI[kt]||''}${kts[1]?`三传另成「${esc(kts[1])}」格。`:''}</p></div>
+   <div class="sec"><h4>怎么看</h4><p style="font-size:12.5px">初传为发用，看事情从何而起；中传看过程；末传看归结。天将中贵人、六合、青龙、太常、太阴、天后为吉将，螣蛇、朱雀、勾陈、天空、白虎、玄武为凶将。六亲以日干为我：${Object.entries(LIUQIN).map(([k,v])=>k+'＝'+v).join('，')}。</p></div>
+   <div class="n-foot"><span>课式依九宗门取三传，月将以中气换将</span><span class="badge">大六壬</span></div>`;
+  return {html,stamp:'课'};
+}
+
+/* ---- 八字 · 今日 ---- */
+function birthLunar(){const p=S.profile;const [y,m,d]=p.birth.split('-').map(Number);const H=p.hour==null?12:HOUR_H[p.hour];return X.Solar.fromYmdHms(y,m,d,H,30,0).getLunar()}
+function castBZ(){
+  const p=S.profile,BL=birthLunar(),ec=BL.getEightChar(),dm=ec.getDayGan(),hasH=p.hour!=null;
+  const cols=[['年柱',ec.getYear(),ec.getYearNaYin()],['月柱',ec.getMonth(),ec.getMonthNaYin()],['日柱',ec.getDay(),ec.getDayNaYin()]];if(hasH)cols.push(['时柱',ec.getTime(),ec.getTimeNaYin()]);
+  const pillars=cols.map(([n,gz,ny],i)=>`<div class="pillar ${i===2?'day':''}"><small>${i===2?'日主':shishen(dm,gz[0])}</small><b>${gz[0]}<br>${gz[1]}</b><small>${n} · ${ny}</small></div>`).join('')+(hasH?'':'<div class="pillar"><small>时辰未填</small><b style="color:var(--line-strong)">?<br>?</b><small>时柱</small></div>');
+  const cnt={木:0,火:0,土:0,金:0,水:0};cols.forEach(c=>{cnt[WXG[c[1][0]]]++;cnt[WXZ[c[1][1]]]++});const tot=cols.length*2;
+  const N=nowLunar(),ly=N.getYearInGanZhiExact(),lm=N.getMonthInGanZhiExact(),ld=N.getDayInGanZhi();
+  const ssD=shishen(dm,ld[0]),dz=ec.getDay()[1],tz=ld[1];
+  const rel=CHONG[dz]===tz?`今日日支${tz}冲日柱地支${dz}（${dz}${tz}相冲）`:HE6[dz]===tz?`今日日支${tz}与日柱地支${dz}六合`:tz===dz?`今日日支与日柱地支同为${dz}`:`今日日支${tz}与日柱地支${dz}不冲不合`;
+  let yun='';if(p.gender==='女'||p.gender==='男'){try{const Y=ec.getYun(p.gender==='男'?1:0),ny=new Date().getFullYear();const dy=Y.getDaYun().find(d=>d.getGanZhi()&&d.getStartYear()<=ny&&d.getEndYear()>=ny);
+    yun=`<dt>大运</dt><dd>${dy?`${dy.getGanZhi()}（${dy.getStartYear()}–${dy.getEndYear()}，${shishen(dm,dy.getGanZhi()[0])}运）`:'尚未起运'} · ${Y.getStartYear()}年${Y.getStartMonth()}个月${Y.getStartDay()}天起运</dd>`}catch(e){}}
+  const html=`<span class="tape"></span>
+   <div class="o-head"><span class="o-title">八字 · 今日</span><span class="badge">${esc(p.name||'我')}</span></div>
+   <div class="o-meta">生于 ${p.birth.replace(/-/g,'.')} ${hasH?hourName(p.hour):'（时辰未填，只排三柱）'} · ${BL.getYearInChinese()}年${BL.getMonthInChinese()}月${BL.getDayInChinese()}</div>
+   <div class="sec"><div class="grid4">${pillars}</div></div>
+   <div class="sec"><h4>五行个数（干支各算一个，共 ${tot} 个）</h4><div class="wx">${Object.entries(cnt).map(([k,v])=>`<div><i style="--h:${v/tot*100}%"></i>${k} ${v}</div>`).join('')}</div></div>
+   <div class="sec"><h4>今日</h4><dl class="kv"><dt>日主</dt><dd>${dm}${WXG[dm]}（${isYang(dm)?'阳':'阴'}）</dd><dt>流年</dt><dd>${ly}（${shishen(dm,ly[0])}）</dd><dt>流月</dt><dd>${lm}（${shishen(dm,lm[0])}）</dd><dt>流日</dt><dd><b style="font-weight:500">${ld}</b>（天干${ld[0]}为${ssD}）</dd>${yun}</dl></div>
+   <div class="o-big" style="font-size:24px">今日见${ssD}</div>
+   <p style="font-size:13.5px;line-height:1.8;margin:0">${SHISHEN_DESC[ssD]}${rel}。</p>
+   ${plainBox(`<p>你的日主是${dm}${WXG[dm]}。今天是${ld}日，对你来说是「${ssD}」：${SS_PLAIN[ssD]}</p><p>${CHONG[dz]===tz?'今天和你的日支相冲，冲主变动，今天容易有计划被打乱、心里不安稳的感觉，适合放慢节奏。':HE6[dz]===tz?'今天和你的日支相合，合主和顺，人际和合作上比较好说话。':tz===dz?'今天的日支和你的日支相同，同气相求，比较自在。':'今天和你的日支不冲不合，没有额外的波动。'}今年${ly}对你是「${shishen(dm,ly[0])}」，这个月${lm}是「${shishen(dm,lm[0])}」，可以当作大背景。</p>`)}
+   <div class="sec"><h4>说明</h4><p style="font-size:12.5px;color:var(--ink-2)">十神按子平法以日干为我推定。日主强弱、格局与喜用神要综合全盘才能判断，这里只列出排盘和今日干支的关系，不替你下结论。</p></div>
+   <div class="n-foot"><span>节气交接按天文历推算，未做真太阳时校正</span><span class="badge">八字</span></div>`;
+  return {html,stamp:'命'};
+}
+
+/* ---- 紫微 · 今日 ---- */
+const STAR_WX={紫微:'阴土',天机:'阴木',太阳:'阳火',武曲:'阴金',天同:'阳水',廉贞:'阴火',天府:'阳土',太阴:'阴水',贪狼:'阳木',巨门:'阴水',天相:'阳水',天梁:'阳土',七杀:'阴金',破军:'阴水'};
+const PALACE_DESC={命宫:'自身性情与整体走向',兄弟:'手足、同辈',夫妻:'伴侣与感情',子女:'子女、创作与晚辈',财帛:'钱财进出',疾厄:'身体状况',迁移:'外出与外界际遇',仆役:'朋友、同事、部属',交友:'朋友、同事、部属',官禄:'事业、学业',田宅:'居所、家宅',福德:'精神状态与享受',父母:'长辈、上司与文书'};
+const SIHUA=[['化禄','财禄、顺遂与机缘'],['化权','掌控与能力发挥'],['化科','名声、贵人与文书'],['化忌','阻滞与执着，需要留心']];
+function castZW(){
+  const p=S.profile,a=X.astro.bySolar(p.birth,p.hour,p.gender,true,'zh-CN');
+  const ming=a.palaces.find(x=>x.name==='命宫'),body=a.palaces.find(x=>x.isBodyPalace);
+  const starTxt=pl=>pl.majorStars.length?pl.majorStars.map(s=>`${s.name}${s.brightness?'<small style="color:var(--ink-2)">'+s.brightness+'</small>':''}${STAR_WX[s.name]?`（${STAR_WX[s.name]}）`:''}${s.mutagen?' 化'+s.mutagen:''}`).join('、'):'';
+  let mingStars=starTxt(ming);if(!mingStars){const opp=a.palaces[(a.palaces.indexOf(ming)+6)%12];mingStars=`命无正曜，借对宫（${opp.name}）主星：${starTxt(opp)||'亦无'}`}
+  const h=a.horoscope(new Date()),dPal=a.palaces[h.daily.index],yPal=a.palaces[h.yearly.index];
+  const findStar=n=>{const pl=a.palaces.find(x=>[...x.majorStars,...x.minorStars,...(x.adjectiveStars||[])].some(s=>s.name===n));return pl?pl.name:'—'};
+  const sihua=h.daily.mutagen.map((n,i)=>`<dt>${SIHUA[i][0]}</dt><dd>${n} · 在本命${findStar(n)}（${PALACE_DESC[findStar(n)]||''}）</dd>`).join('');
+  const html=`<span class="tape"></span>
+   <div class="o-head"><span class="o-title">紫微 · 今日</span><span class="badge">${esc(p.name||'我')}</span></div>
+   <div class="o-meta">${a.lunarDate} ${a.time} · ${a.chineseDate} · ${p.gender}</div>
+   <div class="sec"><h4>本命</h4><dl class="kv"><dt>命宫</dt><dd>${ming.heavenlyStem}${ming.earthlyBranch} · ${mingStars}</dd><dt>身宫</dt><dd>${body?body.name:''}</dd><dt>五行局</dt><dd>${a.fiveElementsClass}</dd><dt>命主</dt><dd>${a.soul}</dd><dt>身主</dt><dd>${a.body}</dd></dl></div>
+   <div class="o-big" style="font-size:22px">流日命宫在本命${dPal.name}</div>
+   <p style="font-size:13.5px;line-height:1.8;margin:0">今日（${h.daily.heavenlyStem}${h.daily.earthlyBranch}日）以本命${dPal.name}为流日命宫，这一天多与「${PALACE_DESC[dPal.name]||''}」相关。流年（${h.yearly.heavenlyStem}${h.yearly.earthlyBranch}）命宫在本命${yPal.name}。</p>
+   ${plainBox(`<p>今天的重心在「${PALACE_DESC[dPal.name]||dPal.name}」这一块。</p><p>化禄落在${findStar(h.daily.mutagen[0])}，${PALACE_DESC[findStar(h.daily.mutagen[0])]||''}方面比较顺、有机会；化权落在${findStar(h.daily.mutagen[1])}，这方面你说了算；化科落在${findStar(h.daily.mutagen[2])}，这方面容易得到认可或贵人帮忙；化忌落在${findStar(h.daily.mutagen[3])}，${PALACE_DESC[findStar(h.daily.mutagen[3])]||''}方面容易卡住，多留心、别钻牛角尖。</p>`)}
+   <div class="sec"><h4>流日四化（${h.daily.heavenlyStem}干）</h4><dl class="kv">${sihua}</dl><p style="font-size:12.5px;color:var(--ink-2);margin-top:6px">${SIHUA.map(s=>s[0]+'主'+s[1]).join('；')}（通行释义）。</p></div>
+   <div class="n-foot"><span>依紫微斗数安星法排盘，未做真太阳时校正</span><span class="badge">紫微斗数</span></div>`;
+  return {html,stamp:'紫'};
+}
+
+/* ---- 今日黄历 ---- */
+function hlPlain(L){const yi=L.getDayYi(),ji=L.getDayJi(),ch=(L.getDayChongDesc().match(/\)(.+)$/)||[])[1];
+  return `<p>今天是${L.getDayTianShenType()}日（值神${L.getDayTianShen()}，${L.getDayTianShenLuck()}），${ZX_PLAIN[L.getZhiXing()]||L.getZhiXing()+'日'}。</p><p>适合做：${yi.slice(0,6).join('、')}${yi.length>6?' 等':''}。<br>尽量别做：${ji.slice(0,6).join('、')}${ji.length>6?' 等':''}。</p>${ch?`<p class="sub">今天冲属${ch}的人，属${ch}的话凡事多留个心眼。喜神在${L.getDayPositionXiDesc()}，财神在${L.getDayPositionCaiDesc()}。</p>`:''}`}
+function castHL(){
+  const L=nowLunar(),ts=L.getDayTianShenType();
+  const html=`<span class="tape"></span>
+   <div class="o-head"><span class="o-title">今日黄历</span><span class="badge">${ts}日</span></div>
+   <div class="o-meta">${todayStr().replace(/-/g,'.')} · ${L.getYearInGanZhi()}年 ${L.getMonthInChinese()}月${L.getDayInChinese()} · ${L.getMonthInGanZhi()}月 ${L.getDayInGanZhi()}日</div>
+   <div class="o-big" style="font-size:26px">${L.getZhiXing()}日 · ${L.getDayTianShen()}${lvl(L.getDayTianShenLuck(),L.getDayTianShenLuck()==='吉'?'good':'bad')}</div>
+   ${plainBox(hlPlain(L))}
+   <div class="sec"><h4>宜</h4><div class="yj">${L.getDayYi().map(x=>`<span>${x}</span>`).join('')}</div></div>
+   <div class="sec"><h4>忌</h4><div class="yj ji">${L.getDayJi().map(x=>`<span>${x}</span>`).join('')}</div></div>
+   <div class="sec"><dl class="kv"><dt>冲煞</dt><dd>冲${L.getDayChongDesc()} · 煞${L.getDaySha()}</dd><dt>星宿</dt><dd>${L.getXiu()}宿（${L.getXiuLuck()}）</dd><dt>喜神</dt><dd>${L.getDayPositionXiDesc()}</dd><dt>福神</dt><dd>${L.getDayPositionFuDesc()}</dd><dt>财神</dt><dd>${L.getDayPositionCaiDesc()}</dd><dt>彭祖百忌</dt><dd>${L.getPengZuGan()}　${L.getPengZuZhi()}</dd><dt>节气</dt><dd>${L.getPrevJieQi().getName()}后</dd></dl></div>
+   <div class="n-foot"><span>宜忌、值神、建除依传统择日规则推算</span><span class="badge">黄历</span></div>`;
+  return {html,stamp:'历'};
+}
+
+/* ---- 起课前的输入 ---- */
+function missingFor(k){const p=S.profile,m=[];if(k==='bz'||k==='zw'){if(!p.birth)m.push('出生日期')}if(k==='zw'){if(p.hour==null)m.push('出生时辰');if(p.gender!=='女'&&p.gender!=='男')m.push('性别')}return m}
+function askOracle(){
+  const k=S.method,M=METHODS[k],L=nowLunar();
+  const miss=missingFor(k);
+  if(miss.length){
+    openBS(`<div class="bs-title"><h3>${M.n}</h3><span>还差一点信息</span></div>
+      <div class="note">${k==='bz'?'八字要用出生日期排年、月、日三柱，时辰和性别可选（有时辰才能排时柱，有性别才能排大运）。':'紫微斗数要用出生日期、出生时辰和性别安命宫、定大限，三样缺一不可。'}<br>还缺：<b>${miss.join('、')}</b>。</div>
+      <div class="note" style="margin-top:8px">不想填的话，可以先抽<b>小六壬</b>、<b>梅花易数</b>或<b>大六壬</b>，它们只用此刻的时间或你报的数。</div>
+      <div class="acts"><button class="btn sm" data-sw="xlr">换小六壬</button><button class="btn sm" data-sw="mh">换梅花易数</button><button class="btn sm primary" data-fill>去填写</button></div>`,c=>{
+      c.onclick=async e=>{const b=e.target.closest('button');if(!b)return;
+        if(b.dataset.sw){await closeBS();setMethod(b.dataset.sw)}
+        if(b.hasAttribute('data-fill')){await closeBS();openSettings(true)}}});
+    return}
+  const st={how:'time',q:k==='mh'?'人事':'综合',ask:'',nums:[],slot:0,qinfo:false};const maxLen=k==='xlr'?2:3,nSlots=k==='xlr'?3:2;
+  const qs=k==='xlr'?Object.keys(XLR_Q):k==='mh'?MH_CATS:null;
+  const timeNote={xlr:`以此刻起课：${L.getMonthInChinese()}月${L.getDayInChinese()}、${L.getTimeZhi()}时`,mh:`以此刻起卦：${L.getYearZhi()}年、${L.getMonthInChinese()}月${L.getDayInChinese()}、${L.getTimeZhi()}时`};
+  const p=S.profile;
+  const body=()=>{let h='';
+    if(qs)h+=`<div class="lab2">所问之事<span class="qtip">选中后再点一下，看是什么意思</span></div><div class="segs" data-g="q">${qs.map(x=>`<button type="button" class="chip plain" data-v="${x}" aria-pressed="${st.q===x}">${x}</button>`).join('')}</div>${st.qinfo?`<div class="qhint"><b>${st.q}</b>：${(k==='mh'&&QDESC_MH[st.q])||QDESC[st.q]||''}</div>`:''}`;
+    if(k!=='hl')h+=`<div class="lab2">写下想问的（可不填）</div><input class="tin" id="askTxt" maxlength="40" placeholder="比如：钥匙放哪了" value="${esc(st.ask)}">`;
+    if(k==='xlr'||k==='mh'){h+=`<div class="lab2">起课方式</div><div class="segs" data-g="how"><button type="button" class="chip plain" data-v="time" aria-pressed="${st.how==='time'}">用此刻时间</button><button type="button" class="chip plain" data-v="num" aria-pressed="${st.how==='num'}">${k==='xlr'?'报三个数':'报数'}</button></div>`;
+      h+=st.how==='time'?`<div class="note" style="margin-top:10px">${timeNote[k]}</div>`:`<div class="ntiles ${k==='mh'?'two':''}">${(k==='xlr'?[0,1,2]:[0,1]).map(i=>`<button type="button" class="ntile ${st.slot===i?'on':''}" data-slot="${i}"><b class="${st.nums[i]?'':'ph'}">${st.nums[i]||'–'}</b><small>${k==='mh'?(i===0?'上卦数':'下卦数 · 可不填'):'第'+'一二三'[i]+'个数'}</small></button>`).join('')}</div>
+        <div class="keypad">${[1,2,3,4,5,6,7,8,9].map(n=>`<button type="button" data-key="${n}">${n}</button>`).join('')}<button type="button" class="fn" data-key="c">清空</button><button type="button" data-key="0">0</button><button type="button" class="fn" data-key="b">⌫</button></div><div class="ask">${k==='xlr'?'心里想着所问之事，随口报三个 1–99 的数。':'报一个数：作上卦，时辰数作下卦；报两个数：先数为上卦，后数为下卦。'}</div>`}
+    if(k==='dlr'){const r=X.getLiuRenByDate(new Date());h+=`<div class="note" style="margin-top:12px">以此刻起课：${r.dateInfo.bazi.split(' ')[2]}日 ${L.getTimeZhi()}时，月将 ${r.dateInfo.yuejiang}。</div>`}
+    if(k==='bz')h+=`<div class="note" style="margin-top:12px">用设置里的个人信息：${p.birth.replace(/-/g,'.')} ${p.hour!=null?hourName(p.hour):'时辰未填'}${p.gender?' · '+p.gender:''}</div>`;
+    if(k==='zw')h+=`<div class="note" style="margin-top:12px">用设置里的个人信息：${p.birth.replace(/-/g,'.')} ${hourName(p.hour)} · ${p.gender}</div>`;
+    if(k==='hl')h+=`<div class="note">今天 ${todayStr().replace(/-/g,'.')} · ${L.getMonthInChinese()}月${L.getDayInChinese()}。不用输入，直接摇签。</div>`;
+    return h};
+  openBS(`<div class="bs-title"><h3>${M.n}</h3><span>${M.need}</span></div><div id="askBody"></div><div class="acts"><button class="btn sm" data-x>取消</button><button class="btn sm primary" data-go>摇签起课</button></div>`,c=>{
+    const ab=c.querySelector('#askBody');const syncAsk=()=>{const v=c.querySelector('#askTxt');if(v)st.ask=v.value};ab.innerHTML=body();
+    const paintTiles=()=>{c.querySelectorAll('.ntile').forEach(t=>{const i=+t.dataset.slot,b=t.querySelector('b');t.classList.toggle('on',st.slot===i);b.textContent=st.nums[i]||'–';b.classList.toggle('ph',!st.nums[i])})};
+    c.onclick=async e=>{const b=e.target.closest('button');if(!b)return;
+      if(b.dataset.slot!=null){st.slot=+b.dataset.slot;clack(0,.05);paintTiles();return}
+      if(b.dataset.key!=null){const kk=b.dataset.key,cur=st.nums[st.slot]||'';buzz(5);clack(0,.05);
+        if(kk==='b')st.nums[st.slot]=cur.slice(0,-1);
+        else if(kk==='c'){st.nums=[];st.slot=0}
+        else{if(cur.length>=maxLen){if(st.slot<nSlots-1){st.slot++;st.nums[st.slot]=(kk==='0'?'':kk)}}
+          else if(!(cur===''&&kk==='0'))st.nums[st.slot]=cur+kk;
+          if((st.nums[st.slot]||'').length>=maxLen&&st.slot<nSlots-1&&k==='xlr')st.slot++}
+        paintTiles();const t=c.querySelector(`.ntile[data-slot="${st.slot}"] b`);t&&t.animate([{transform:'scale(1.25)'},{transform:'none'}],{duration:180,easing:'ease-out'});return}
+      const g=b.parentElement.dataset.g;if(g){syncAsk();if(g==='q'&&st.q===b.dataset.v){st.qinfo=!st.qinfo}else{if(g==='q')st.qinfo=false;st[g]=b.dataset.v}clack(0,.06);ab.innerHTML=body();
+        if(g==='q'&&st.qinfo){const qh=c.querySelector('.qhint');qh&&qh.animate([{opacity:0,transform:'translateY(-4px)'},{opacity:1,transform:'none'}],{duration:200,easing:'ease-out'})}return}
+      if(b.hasAttribute('data-x')){closeBS();return}
+      if(b.hasAttribute('data-go')){
+        const v=c.querySelector('#askTxt');if(v)st.ask=v.value.trim();let arg=st;
+        if(st.how==='num'){const need=k==='xlr'?3:1;const tiles=[...c.querySelectorAll('.ntile')];
+          const nums=tiles.map((t,i)=>st.nums[i]?parseInt(st.nums[i],10):null);let bad=false;
+          tiles.forEach((t,i)=>{if(i<need&&!(nums[i]>0)){t.classList.remove('shake');void t.offsetWidth;t.classList.add('shake');bad=true}});
+          if(bad){toast(k==='xlr'?'三个数都要填':'至少报一个数');return}arg={...st,nums:nums.filter(x=>x!=null)}}
+        let res;try{res={xlr:castXLR,mh:castMH,dlr:castDLR,bz:castBZ,zw:castZW,hl:castHL}[k](arg)}catch(err){console.error(err);toast('排盘出错了：'+err.message);return}
+        await closeBS();
+        const sticks=[...document.querySelectorAll('.stick')];shakeAndOpen(rnd(sticks),M.tip,res)}};
+  });
+}
+
+/* ---------- note: fold + unfold ---------- */
+async function openNote({html,stamp,stickEl,entry}){
+  busy=true;
+  const ov=$('#ov'), stage=$('#stage'); ov.hidden=false;
+  if(!stickEl){$('#nact').innerHTML='';$('#scrim').animate([{opacity:0},{opacity:1}],{duration:300*T,fill:'both'})}
+  const card=document.createElement('article'); card.className='card'; card.innerHTML=html; card.style.visibility='hidden'; stage.appendChild(card);
+  const W=card.offsetWidth, h=Math.ceil(card.offsetHeight/3); card.style.height=3*h+'px';
+  const slice=k=>{const c=card.cloneNode(true);c.style.visibility='visible';c.style.top=(-k*h)+'px';c.style.width=W+'px';c.style.height=3*h+'px';return c};
+  const fold=document.createElement('div'); fold.className='fold'; fold.style.width=W+'px'; fold.style.height=h+'px';
+  const mid=document.createElement('div'); mid.className='face'; mid.appendChild(slice(1));
+  const mk=(k,isTop)=>{const p=document.createElement('div');p.className='panel';p.style.height=h+'px';
+    const fr=document.createElement('div');fr.className='face';fr.appendChild(slice(k));const sh=document.createElement('div');sh.className='shade';fr.appendChild(sh);
+    const bk=document.createElement('div');bk.className='face back';
+    if(isTop)bk.innerHTML=`<div class="stamp"><span class="ring">${stamp}</span>小日记</div>`;
+    p.append(fr,bk);return p};
+  const top=mk(0,true), bot=mk(2,false);
+  top.style.bottom='100%'; top.style.transformOrigin='50% 100%'; top.style.transform='rotateX(-180deg) translateZ(-2px)';
+  bot.style.top='100%'; bot.style.transformOrigin='50% 0'; bot.style.transform='rotateX(180deg) translateZ(-1px)';
+  fold.append(mid,top,bot); stage.appendChild(fold);
+  const EZ='cubic-bezier(.22,1,.36,1)';
+  await fold.animate([{transform:'translateY(24px) scale(.5) rotate(-6deg)',opacity:0},{transform:'translateY(-3px) scale(1.03) rotate(.8deg)',opacity:1,offset:.65},{transform:'none',opacity:1}],{duration:300*T,easing:'cubic-bezier(.2,.8,.3,1)'}).finished.catch(()=>{});
+  await sleep(40*T);
+  swish(); buzz(10);
+  const tD=380*T,bD=340*T;
+  top.querySelector('.shade').animate([{opacity:1},{opacity:0}],{duration:tD,easing:'ease-out',fill:'forwards'});
+  const ta=top.animate([{transform:'rotateX(-180deg) translateZ(-2px)'},{transform:'rotateX(6deg) translateZ(-2px)',offset:.78},{transform:'rotateX(0deg) translateZ(-2px)'}],{duration:tD,easing:EZ,fill:'forwards'});
+  await sleep(tD*.5);
+  swish(); buzz(10);
+  bot.querySelector('.shade').animate([{opacity:1},{opacity:0}],{duration:bD,easing:'ease-out',fill:'forwards'});
+  const ba=bot.animate([{transform:'rotateX(180deg) translateZ(-1px)'},{transform:'rotateX(-5deg) translateZ(-1px)',offset:.78},{transform:'rotateX(0deg) translateZ(-1px)'}],{duration:bD,easing:EZ,fill:'forwards'});
+  await Promise.all([ta.finished.catch(()=>{}),ba.finished.catch(()=>{})]);
+  card.style.height=''; card.style.visibility='visible'; fold.remove();
+  const act=$('#nact');
+  act.innerHTML=stickEl?`<button class="btn" id="aBack">放回签筒</button><button class="btn primary" id="aAgain">${mode==='oracle'?'再起一课':'再抽一支'}</button>`
+                       :`<button class="btn danger" id="aDel">删除</button><button class="btn primary" id="aBack">收起</button>`;
+  [...act.children].forEach((b,i)=>b.animate([{opacity:0,transform:'translateY(10px)'},{opacity:1,transform:'none'}],{duration:280*T,delay:i*70*T,fill:'backwards',easing:'ease-out'}));
+  const close=q=>closeNote(card,stickEl,q);
+  $('#aBack').onclick=()=>close(false);
+  $('#scrim').onclick=()=>close(false);
+  if(stickEl)$('#aAgain').onclick=async()=>{await close(true);if(mode==='oracle')askOracle();else drawDiary()};
+  else{ let armed=false; $('#aDel').onclick=async ev=>{ if(!armed){armed=true;ev.currentTarget.textContent='确定删除？';setTimeout(()=>{armed=false;const b=$('#aDel');if(b)b.textContent='删除'},3000);return}
+     entries=entries.filter(x=>x.id!==entry.id);save();await close(false);renderList();renderCup();toast('删掉了')}}
+  busy=false;
+}
+async function closeNote(card,stickEl,quick){
+  busy=true; $('#scrim').onclick=null; $('#nact').innerHTML='';
+  let tx=0,ty=60;
+  if(stickEl){const a=card.getBoundingClientRect(),c=cup.getBoundingClientRect();tx=c.left+c.width/2-(a.left+a.width/2);ty=c.top+60-(a.top+a.height/2)}
+  const d=(quick?300:420)*T;
+  card.animate([{transform:'none',opacity:1},{transform:`translate(${tx*.15}px,-14px) scale(1.03)`,opacity:1,offset:.25},{transform:`translate(${tx}px,${ty}px) scale(.12,.3) rotate(-30deg)`,opacity:0}],{duration:d,easing:'cubic-bezier(.5,0,.75,0)',fill:'forwards'});
+  await $('#scrim').animate([{opacity:1},{opacity:0}],{duration:d,fill:'forwards'}).finished.catch(()=>{});
+  $('#ov').hidden=true; $('#stage').innerHTML=''; $('#scrim').getAnimations().forEach(a=>a.cancel());
+  if(stickEl){const r=+stickEl.dataset.r;stickEl.style.visibility='';clack(.12,.2);
+    await stickEl.animate([{transform:`translateY(-90px) rotate(${r}deg)`},{transform:`translateY(6px) rotate(${r}deg)`,offset:.75},{transform:`rotate(${r}deg)`}],{duration:380*T,easing:'ease-in'}).finished.catch(()=>{});
+    $('#hint').innerHTML=hintHTML();}
+  busy=false;
+}
+
+/* ---------- tabs ---------- */
+function go(v){
+  document.querySelectorAll('.tab').forEach(t=>t.setAttribute('aria-selected',t.dataset.v===v));
+  ['draw','write','list'].forEach(k=>$('#v-'+k).hidden=k!==v);
+  $('#app').classList.toggle('on-draw',v==='draw');
+  closeFilter();
+  if(v==='list')renderList();
+  if(v==='write')renderPickers();
+  if(v==='draw'&&pendingDrop){filters={mood:null,weather:null};if(mode!=='diary'){setMode('diary');applyCup()}renderFilters();renderCup();dropNew()}
+}
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{ if(busy)return; go(t.dataset.v)});
+function dropNew(){const s=document.querySelector(`.stick[data-id="${pendingDrop}"]`);pendingDrop=null;if(!s)return;const r=+s.dataset.r;
+  s.animate([{transform:`translateY(-320px) rotate(${r+20}deg)`,opacity:0},{opacity:1,offset:.15},{transform:`translateY(10px) rotate(${r}deg)`,offset:.7},{transform:`translateY(-12px) rotate(${r}deg)`,offset:.85},{transform:`rotate(${r}deg)`}],{duration:780*T,delay:250,easing:'ease-in',fill:'backwards'});
+  setTimeout(()=>{clack(0,.25);clack(.06,.12);buzz(20);cup.animate([{transform:'none'},{transform:'translateY(4px) scale(1.03,.97) rotate(-2deg)'},{transform:'none'}],{duration:320,easing:'ease-out'})},250+546*T)}
+
+/* ---------- write ---------- */
+let wDate=todayStr(),wMoods=[],wWeather=null,openPk={mood:false,weather:false};
+function renderDateBtn(){const f=fmt(wDate),rel=wDate===todayStr()?'今天':'';$('#wDateBtn').innerHTML=`<span class="big">${f.md}</span><span class="sm"><b>${rel?rel+' · ':''}周${f.wd} · ${f.y}</b>${lunarText(wDate)}</span>${CAL}`}
+$('#wDateBtn').onclick=()=>datePicker({title:'哪一天的日记',value:wDate,max:todayStr(),onPick:v=>{wDate=v;renderDateBtn()}});
+function renderPickers(){
+  const M=MOODS(),W=WEATHER();
+  const build=(host,kind)=>{
+    const dict=kind==='mood'?M:W, sel=kind==='mood'?wMoods:(wWeather?[wWeather]:[]), open=openPk[kind];
+    const sum=sel.filter(k=>dict[k]).length?sel.filter(k=>dict[k]).map(k=>`<span>${sv(dict[k].d)}${esc(dict[k].t)}</span>`).join(''):kind==='mood'?'<span class="muted">无 · 点开可多选</span>':`<span>${sv(W.sunny.d)}晴</span><span class="muted">默认</span>`;
+    host.innerHTML=`<button type="button" class="pk-head" aria-expanded="${open}"><span class="lab">${kind==='mood'?'心情':'天气'}</span><span class="pk-sum">${sum}</span>${CHEV}</button>
+      <div class="pk-body" ${open?'':'hidden'}><div class="row wrap">${Object.entries(dict).map(([k,v])=>`<button type="button" class="chip" data-k="${k}" aria-pressed="${sel.includes(k)}">${kind==='mood'?`<i class="dotc" style="background:${v.c}"></i>`:''}${sv(v.d)}${esc(v.t)}</button>`).join('')}<button type="button" class="chip add" data-add aria-label="自定义">${PLUS}</button></div></div>`;
+    host.onclick=e=>{
+      if(e.target.closest('.addf'))return;
+      if(e.target.closest('.pk-head')){openPk[kind]=!openPk[kind];renderPickers();const b=host.querySelector('.pk-body');if(openPk[kind])b.animate([{opacity:0,transform:'translateY(-4px)'},{opacity:1,transform:'none'}],{duration:200});return}
+      const c=e.target.closest('.chip');if(!c)return;
+      if(c.hasAttribute('data-add')){addForm(host.querySelector('.pk-body'),kind,k=>{if(kind==='mood')wMoods.push(k);else wWeather=k;renderPickers()});return}
+      const k=c.dataset.k;
+      if(kind==='mood')wMoods=wMoods.includes(k)?wMoods.filter(x=>x!==k):[...wMoods,k];else wWeather=wWeather===k?null:k;
+      clack(0,.06);renderPickers()};
+  };
+  build($('#pkMood'),'mood');build($('#pkWeather'),'weather');
+}
+function resetWrite(){wDate=todayStr();renderDateBtn();$('#wText').value='';wMoods=[];wWeather=null;openPk={mood:false,weather:false};renderPickers();$('#wCount').textContent='0 字'}
+$('#wText').addEventListener('input',e=>$('#wCount').textContent=e.target.value.trim().length+' 字');
+$('#wForm').addEventListener('submit',e=>{e.preventDefault();const t=$('#wText').value.trim();
+  if(!t){const a=$('#wText');a.classList.remove('shake');void a.offsetWidth;a.classList.add('shake');a.focus();return}
+  const id='e'+Date.now().toString(36);entries.push({id,date:wDate,moods:wMoods.slice(),weather:wWeather||'sunny',text:t});save();
+  pendingDrop=id;resetWrite();go('draw');toast('投进签筒了')});
+
+/* ---------- list ---------- */
+function renderList(){
+  const s=entries.slice().sort((a,b)=>b.date.localeCompare(a.date)),M=MOODS(),W=WEATHER();
+  $('#lTitle').textContent=`共 ${s.length} 篇`;
+  $('#clearSamples').hidden=!entries.some(e=>e.sample);
+  let html='',last='';
+  s.forEach(e=>{const f=fmt(e.date),mk=f.y+' · '+pad(f.m);if(mk!==last){html+=`<div class="month">${mk}</div>`;last=mk}
+    const w=W[e.weather]||W.sunny,ms=(e.moods||[]).filter(k=>M[k]),td=e.todos||[];
+    const ex=e.text||(td.length?`做了 ${td.filter(t=>t.done).length} 件事：${td.filter(t=>t.done).map(t=>t.name).join('、')}`:'');
+    html+=`<button class="entry" data-id="${e.id}"><span class="d">${pad(f.d)}<small>周${f.wd}</small></span><span style="min-width:0"><span class="meta"><span>${sv(w.d)}${esc(w.t)}</span>${ms.map(k=>`<span>${sv(M[k].d)}${esc(M[k].t)}</span>`).join('')}${!ms.length?'<span>心情 无</span>':''}${td.length?'<span class="badge">每日List</span>':''}${e.sample?'<span class="badge">示例</span>':''}</span><span class="ex">${esc(ex)}</span></span></button>`});
+  $('#list').innerHTML=html||'<p style="color:var(--ink-2);font-family:var(--f-display);text-align:center;margin-top:40px">还没有日记，去写第一篇吧</p>';
+}
+$('#list').onclick=e=>{const b=e.target.closest('.entry');if(!b||busy)return;const en=entries.find(x=>x.id===b.dataset.id);if(en)openNote({html:cardHTML(en),stamp:stampFor(en),stickEl:null,entry:en})};
+$('#clearSamples').onclick=()=>{entries=entries.filter(e=>!e.sample);save();renderList();renderCup();toast('示例已清除')};
+$('#impBtn').onclick=()=>{const p=$('#imp');p.hidden=!p.hidden;if(!p.hidden)$('#impText').focus()};
+
+/* ---------- import ---------- */
+const KW_W=[['snow',/雪/],['rain',/雨/],['wind',/风/],['fog',/雾|霾|阴天/],['cloudy',/多云|云/],['sunny',/晴|太阳|阳光/]];
+const KW_M=[['angry',/生气|气死|烦死|恼火|火大/],['down',/难过|伤心|低落|丧|郁闷|想哭|失落/],['tired',/累|困|疲|好忙/],['moved',/感动|温暖|暖心|泪目/],['happy',/开心|高兴|快乐|哈哈|好玩|幸福/],['calm',/平静|安静|放松|慢慢/]];
+const tagW=t=>{for(const [k,r] of KW_W) if(r.test(t)) return k; return null};
+const tagM=t=>KW_M.filter(([k,r])=>r.test(t)).map(x=>x[0]).slice(0,3);
+function normDate(s){s=String(s||'').trim();let m=s.match(/(\d{4})\s*[-./年]\s*(\d{1,2})\s*[-./月]\s*(\d{1,2})/);if(m)return`${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+  m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);if(m)return`${m[3]}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}`;return null}
+function csvRows(t){t=t.replace(/^﻿/,'');const rows=[];let row=[],f='',q=false;
+  for(let i=0;i<t.length;i++){const c=t[i];if(q){if(c==='"'){if(t[i+1]==='"'){f+='"';i++}else q=false}else f+=c}
+    else if(c==='"')q=true;else if(c===','||c==='\t'){row.push(f);f=''}else if(c==='\n'){row.push(f);rows.push(row);row=[];f=''}else if(c!=='\r')f+=c}
+  if(f||row.length){row.push(f);rows.push(row)}return rows.filter(r=>r.some(x=>x.trim()))}
+const COLS={date:['日期','date','day','完成日期'],type:['类型','type','分类','category','任务类型'],name:['任务','任务名称','名称','name','task','title','事项'],done:['完成','是否完成','done','status','状态','completed'],
+  minutes:['用时','用时(分钟)','用时（分钟）','minutes','duration','时长','耗时'],time:['时间','完成时间','开始时间','开始','time','start','completedat','completed_at'],
+  text:['日记','内容','正文','text','content','diary','note'],mood:['心情','mood','moods'],weather:['天气','weather']};
+function findMood(n){n=String(n).trim();if(!n||n==='无')return null;const M=MOODS();for(const [k,v] of Object.entries(M))if(k===n||v.t===n)return k;const t=tagM(n);return t[0]||null}
+function findWeather(n){n=String(n).trim();if(!n||n==='无')return null;const W=WEATHER();for(const [k,v] of Object.entries(W))if(k===n||v.t===n)return k;return tagW(n)}
+function parseCSV(raw){
+  const rows=csvRows(raw);if(rows.length<2)return null;
+  const head=rows[0].map(h=>h.trim().toLowerCase().replace(/\s/g,''));const idx={};
+  for(const [k,al] of Object.entries(COLS)){const i=head.findIndex(h=>al.some(a=>a.toLowerCase()===h));if(i>=0)idx[k]=i}
+  if(idx.date==null||(idx.name==null&&idx.text==null))return null;
+  const g=(r,k)=>idx[k]!=null?(r[idx[k]]||'').trim():'';
+  const body=rows.slice(1);
+  if(idx.text!=null) return {kind:'diary',items:body.map(r=>({date:normDate(g(r,'date'))||todayStr(),text:g(r,'text'),moods:[...new Set(g(r,'mood').split(/[;；、|/]/).map(findMood).filter(Boolean))],weather:findWeather(g(r,'weather'))||'sunny'})).filter(x=>x.text)};
+  const byDay={};
+  body.forEach(r=>{const d=normDate(g(r,'date'));const n=g(r,'name');if(!d||!n)return;
+    const dn=g(r,'done').toLowerCase();const done=idx.done==null?true:/^(1|true|yes|y|是|已完成|完成|done|✓|√)$/.test(dn);
+    const tp=g(r,'type');const type=/重复|recur/i.test(tp)?'重复':/日程|sched/i.test(tp)?'日程':/临时|temp/i.test(tp)?'临时':tp;
+    const mins=parseInt(g(r,'minutes'),10);const tm=(g(r,'time').match(/\d{1,2}:\d{2}/)||[''])[0];
+    (byDay[d]=byDay[d]||[]).push({name:n,type,done,minutes:isNaN(mins)?null:mins,time:tm})});
+  return {kind:'list',items:Object.entries(byDay).map(([date,todos])=>({date,text:'',moods:[],weather:'sunny',todos:todos.sort((a,b)=>(a.time||'99').localeCompare(b.time||'99'))}))};
+}
+function parseText(raw,fname=''){
+  raw=raw.trim(); if(!raw) return null;
+  try{const j=JSON.parse(raw);if(Array.isArray(j))return{kind:'diary',items:j.filter(x=>x&&x.text).map(x=>{const ms=Array.isArray(x.moods)?x.moods:(x.mood?[x.mood]:[]);return{date:normDate(x.date)||todayStr(),text:String(x.text).trim(),moods:ms.map(findMood).filter(Boolean),weather:(x.weather&&findWeather(x.weather))||'sunny'}})}}catch(e){}
+  const firstLine=raw.split(/\r?\n/)[0].toLowerCase();
+  if(/\.csv$/i.test(fname)||(/[,\t]/.test(firstLine)&&Object.values(COLS).flat().some(a=>firstLine.includes(a.toLowerCase())))){const c=parseCSV(raw);if(c)return c}
+  const re=/^\s*(\d{4})\s*[-./年]\s*(\d{1,2})\s*[-./月]\s*(\d{1,2})\s*日?\s*(.*)$/; const out=[]; let cur=null;
+  raw.split(/\r?\n/).forEach(line=>{const m=line.match(re);
+    if(m){cur={date:`${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`,lines:[m[4]].filter(Boolean)};out.push(cur)}
+    else{ if(!cur){cur={date:null,lines:[]};out.push(cur)} cur.lines.push(line)}});
+  let res=out.map(o=>({date:o.date,text:o.lines.join('\n').trim()})).filter(o=>o.text);
+  if(res.length===1&&!res[0].date) res=res[0].text.split(/\n\s*\n/).map(t=>({date:null,text:t.trim()})).filter(o=>o.text);
+  return {kind:'diary',items:res.map(o=>({date:o.date||todayStr(),text:o.text,moods:tagM(o.text),weather:tagW(o.text)||'sunny'}))};
+}
+let parsed=null,impName='';
+function preview(){parsed=parseText($('#impText').value,impName);const pv=$('#impPv'),gb=$('#impGo');
+  if(!parsed||!parsed.items.length){pv.textContent=$('#impText').value.trim()?'没认出内容，检查一下日期或表头':'还没有内容';gb.disabled=true;gb.textContent='导入';parsed=null;return}
+  const ds=parsed.items.map(p=>p.date).sort(),n=parsed.items.length;
+  if(parsed.kind==='list'){const tasks=parsed.items.reduce((s,d)=>s+d.todos.length,0),merge=parsed.items.filter(d=>entries.some(e=>e.date===d.date&&!e.sample)).length;
+    pv.textContent=`每日List：${n} 天、${tasks} 件事（${ds[0]} 至 ${ds[n-1]}）${merge?`，其中 ${merge} 天会并进已有日记`:''}`}
+  else pv.textContent=`识别到 ${n} 篇，${ds[0]} 至 ${ds[n-1]}，自动打标签 ${parsed.items.filter(p=>p.moods.length).length} 篇`;
+  gb.disabled=false;gb.textContent=`导入 ${n} ${parsed.kind==='list'?'天':'篇'}`}
+$('#impText').addEventListener('input',()=>{impName='';preview()});
+$('#impFile').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{$('#impText').value=rd.result;impName=f.name;preview()};rd.readAsText(f);e.target.value=''});
+$('#impGo').onclick=()=>{if(!parsed)return;const base=Date.now().toString(36);let added=0,merged=0;
+  parsed.items.forEach((p,i)=>{
+    if(parsed.kind==='list'){const ex=entries.find(e=>e.date===p.date&&!e.sample);
+      if(ex){const have=new Set((ex.todos||[]).map(t=>t.name+'|'+t.time));ex.todos=(ex.todos||[]).concat(p.todos.filter(t=>!have.has(t.name+'|'+t.time)));merged++;return}}
+    entries.push({id:'i'+base+i,...p});added++});
+  save();toast(merged?`新增 ${added} 篇，合并 ${merged} 天`:`导入了 ${added} ${parsed.kind==='list'?'天':'篇'}`);
+  $('#impText').value='';impName='';preview();$('#imp').hidden=true;renderList();renderCup()};
+
+/* ---------- settings ---------- */
+function miniCup(style){const p=cupParts(style);const tips=['var(--m-happy)','var(--m-calm)','var(--m-moved)','var(--m-down)','var(--m-tired)'];let st='';
+  [[52,-8,-6],[66,-30,-2],[80,-18,1],[94,-36,4],[108,-10,7]].forEach(([x,y,r],i)=>{st+=`<g transform="rotate(${r} ${x} 140)"><rect x="${x-5}" y="${y}" width="10" height="150" rx="4" fill="var(--stick)" stroke="var(--stick-line)" stroke-width="1.2"/><rect x="${x-3.5}" y="${y+5}" width="7" height="20" rx="3" fill="${tips[i]}"/></g>`});
+  return `<svg viewBox="0 -50 160 200" aria-hidden="true">${p.back}${st}${p.front}</svg>`}
+function renderSettings(){
+  const el=$('#settings'),M=MOODS(),W=WEATHER(),p=S.profile;
+  el.innerHTML=`<div class="sheet-top"><h2>设置</h2><button class="hbtn" data-close>完成</button></div>
+  <h3 id="profAnchor">个人信息 · 玄学签用</h3>
+  <div class="prof">
+    <div class="srow" style="cursor:default">称呼<input class="tin" id="pName" maxlength="10" placeholder="可不填" value="${esc(p.name||'')}" style="max-width:160px;text-align:right;background:var(--paper);border:0"></div>
+    <div class="srow" style="cursor:default">性别<span class="segs">${['女','男'].map(g=>`<button type="button" class="chip plain" data-gender="${g}" aria-pressed="${p.gender===g}">${g}</button>`).join('')}</span></div>
+    <button class="srow" data-birth>出生日期 <span class="${p.birth?'set':''}">${p.birth?p.birth.replace(/-/g,'.')+' · '+lunarText(p.birth):'未填'}</span></button>
+    <button class="srow" data-hour>出生时辰 <span class="${p.hour!=null?'set':''}">${p.hour!=null?hourName(p.hour)+' '+HOURS[p.hour][1]:'未填'}</span></button>
+    <p class="hint">八字要出生日期；紫微斗数要出生日期、时辰和性别。只保存在这台设备的浏览器里。暂未按出生地做真太阳时校正。${p.birth||p.gender||p.hour!=null||p.name?' <button class="badge" data-clearp style="cursor:pointer">清除个人信息</button>':''}</p>
+  </div>
+  <h3>主题色</h3><div class="pals">${Object.entries(PALETTES).map(([k,q])=>`<button class="pal" data-pal="${k}" aria-pressed="${S.palette===k}"><i style="background:linear-gradient(135deg,hsl(${q.h} ${q.s}% 94%) 50%,hsl(${q.h} ${(q.s*.78).toFixed(1)}% ${q.a}%) 50%)"></i>${q.n}</button>`).join('')}</div>
+  <h3>日记字体</h3><div class="fonts">${Object.entries(FONTS).map(([k,f])=>`<button class="fopt" data-font="${k}" aria-pressed="${S.font===k}"><span><b style="font-family:${f.f.replace(/"/g,"'")}">今天的云是粉色的</b><span>${f.d}</span></span><em>${S.font===k?'使用中':''}</em></button>`).join('')}</div>
+  <h3>背景 · 挂饰</h3><div class="decos">${Object.entries(HANGS).map(([k,h])=>`<button class="dopt" data-hang="${k}" aria-pressed="${S.hang===k}">${miniHang(k)}${h.n}</button>`).join('')}</div>
+  <h3>背景 · 窗台</h3><div class="decos sills">${Object.entries(SILLS).map(([k,h])=>`<button class="dopt" data-sill="${k}" aria-pressed="${S.sill===k}">${miniSill(k)}${h.n}</button>`).join('')}</div>
+  <h3>日记签筒</h3><div class="cups">${Object.entries(CUPS).map(([k,n])=>`<button class="copt" data-cup="${k}" aria-pressed="${S.cup===k}">${miniCup(k)}${n}</button>`).join('')}</div>
+  <h3>自定义心情</h3><div class="clist">${S.customMoods.length?S.customMoods.map(c=>`<div class="citem"><i class="dotc" style="background:${c.color}"></i>${sv(M[c.k].d)}${esc(c.t)}<button class="x" data-delm="${c.k}">删除</button></div>`).join(''):'<p>还没有。写日记或筛选时点“＋”也能加。</p>'}</div>
+  <div style="margin-top:8px"><button class="btn sm" data-addm>＋ 加一个心情</button></div>
+  <h3>自定义天气</h3><div class="clist">${S.customWeather.length?S.customWeather.map(c=>`<div class="citem">${sv(W[c.k].d)}${esc(c.t)}<button class="x" data-delw="${c.k}">删除</button></div>`).join(''):'<p>还没有。</p>'}</div>
+  <div style="margin-top:8px"><button class="btn sm" data-addw>＋ 加一个天气</button></div>
+  <h3>其他</h3>
+  <button class="srow" data-snd>声音 <span>${S.sound?'开':'关'}</span></button>
+  <button class="srow" data-spec>设计说明 <span>配色、动效、起课依据、字体授权 ›</span></button>`;
+  const n=el.querySelector('#pName');n.oninput=()=>{S.profile.name=n.value.trim();saveS()};
+}
+function rerenderSettings(){const st=$('#settings').scrollTop;renderSettings();$('#settings').scrollTop=st}
+$('#settings').addEventListener('click',e=>{if(e.target.closest('.addf'))return;const b=e.target.closest('button');if(!b)return;const d=b.dataset;
+  if(b.hasAttribute('data-close')){$('#settings').hidden=true;return}
+  if(d.gender){S.profile.gender=S.profile.gender===d.gender?undefined:d.gender}
+  else if(b.hasAttribute('data-birth')){datePicker({title:'出生日期',value:S.profile.birth,max:todayStr(),quick:false,startYears:!S.profile.birth,onPick:v=>{S.profile.birth=v;saveS();rerenderSettings()}});return}
+  else if(b.hasAttribute('data-hour')){hourPicker(v=>{S.profile.hour=v;saveS();rerenderSettings()});return}
+  else if(b.hasAttribute('data-clearp')){S.profile={};toast('个人信息已清除')}
+  else if(d.hang){S.hang=d.hang;applyDeco();clack(0,.08)}
+  else if(d.sill){S.sill=d.sill;applyDeco();clack(0,.08)}
+  else if(d.pal){S.palette=d.pal;applyTheme()}
+  else if(d.font){S.font=d.font;applyTheme()}
+  else if(d.cup){S.cup=d.cup;if(mode==='diary')applyCup();clack(0,.2)}
+  else if(d.delm){S.customMoods=S.customMoods.filter(c=>c.k!==d.delm);entries.forEach(x=>x.moods=x.moods.filter(k=>k!==d.delm));wMoods=wMoods.filter(k=>k!==d.delm);save();if(filters.mood===d.delm)filters.mood=null}
+  else if(d.delw){S.customWeather=S.customWeather.filter(c=>c.k!==d.delw);entries.forEach(x=>{if(x.weather===d.delw)x.weather='sunny'});if(wWeather===d.delw)wWeather=null;save();if(filters.weather===d.delw)filters.weather=null}
+  else if(b.hasAttribute('data-addm')){addForm(b.parentElement,'mood',()=>{renderSettings();renderFilters()});return}
+  else if(b.hasAttribute('data-addw')){addForm(b.parentElement,'weather',()=>{renderSettings();renderFilters()});return}
+  else if(b.hasAttribute('data-snd')){S.sound=!S.sound;$('#soundBtn').setAttribute('aria-pressed',S.sound)}
+  else if(b.hasAttribute('data-spec')){openSpec();return}
+  else return;
+  saveS();rerenderSettings();renderFilters();renderPickers();if(!busy)renderCup()});
+function openSettings(toProfile){const s=$('#settings');renderSettings();s.hidden=false;s.scrollTop=0;s.animate([{opacity:0,transform:'translateY(16px)'},{opacity:1,transform:'none'}],{duration:260,easing:'ease-out'});
+  if(toProfile){const a=s.querySelector('#profAnchor');a.animate([{color:'var(--accent)'},{color:'var(--ink-2)'}],{duration:1600})}}
+$('#setBtn').onclick=()=>openSettings(false);
+const sb=$('#soundBtn');sb.setAttribute('aria-pressed',S.sound);sb.onclick=()=>{S.sound=!S.sound;saveS();sb.setAttribute('aria-pressed',S.sound);if(S.sound)clack(0,.2)};
+
+/* ---------- spec ---------- */
+function openSpec(){const s=$('#spec');s.innerHTML=specHTML();s.hidden=false;s.scrollTop=0;s.animate([{opacity:0,transform:'translateY(16px)'},{opacity:1,transform:'none'}],{duration:260,easing:'ease-out'});s.querySelector('[data-close]').onclick=()=>s.hidden=true}
+function specHTML(){
+  const sw=[['--bg','底色','页面底，带一点主题色的白'],['--paper','纸','便签、卡片、输入框'],['--blush','淡色','选中态、标签底'],['--blush-2','淡色二','胶带、腮红、签筒色带'],['--accent','强调色','主按钮、玄学签头、选中日期'],['--ink','墨','正文'],['--ink-2','灰墨','辅助文字'],['--line','线稿','背景简笔画、分隔线'],['--stick','竹签','签身，固定暖竹色']];
+  return `<div class="sheet-top"><h2>设计说明</h2><button class="hbtn" data-close>关闭</button></div>
+  <p style="color:var(--ink-2);margin-top:4px">关键词：留白、轻、一点点俏皮。本页色块跟着当前主题色和深浅模式变化。</p>
+  <h3>主题色</h3>
+  <p>五套：樱粉、薄荷绿、雾蓝、藕紫、杏子。每套只定义色相和饱和度，其余颜色按同一公式生成；日期选择器、起课面板、玄学卡片也都取这套颜色。</p>
+  <div class="sw">${sw.map(s=>`<div><i style="background:var(${s[0]})"></i><span>${s[1]}<br><span style="padding:0;color:var(--ink-2)">${s[2]}</span></span></div>`).join('')}</div>
+  <h3>字体与授权</h3>
+  <div class="tbl"><table><tr><th>用途</th><th>字体</th><th>授权</th></tr>
+  <tr><td>标题、日记正文（默认）</td><td>站酷小薇 ZCOOL XiaoWei</td><td>SIL OFL 1.1</td></tr>
+  <tr><td>日记正文（可选）、玄学卡片、古文引文</td><td>思源宋体 Noto Serif SC</td><td>SIL OFL 1.1</td></tr>
+  <tr><td>日记正文（可选）</td><td>龙藏体 Long Cang</td><td>SIL OFL 1.1</td></tr>
+  <tr><td>界面文字</td><td>思源黑体 Noto Sans SC</td><td>SIL OFL 1.1</td></tr>
+  <tr><td>日期、数字</td><td>Instrument Serif</td><td>SIL OFL 1.1</td></tr></table></div>
+  <p>OFL 允许免费商用、嵌入 App 和改造，唯一限制是不能单独售卖字体文件。上线时建议把字体子集打包进 App，而不是依赖在线加载。</p>
+  <h3>玄学签：起课依据</h3>
+  <ul>
+   <li><b>小六壬</b>：正月起大安，月上起日、日上起时，顺数大安、留连、速喜、赤口、小吉、空亡；或从大安起依次数三个数。歌诀取民间通行本（各本字句略有出入），并按所问之事标出相关句子。</li>
+   <li><b>梅花易数</b>：年月日时起卦（年支数+农历月+日除八得上卦，加时数除八得下卦，总数除六得动爻）或报数起卦（物数占、尺寸占例）。体用、卦气旺衰、十八类占断辞引《梅花易数》原文，卦辞、爻辞引《周易》原文。</li>
+   <li><b>大六壬</b>：月将加占时，布天地盘与十二天将，按九宗门取三传，标出课体、空亡、六亲、遁干。</li>
+   <li><b>八字 · 今日</b>：按节气排四柱（无时辰则排三柱），以日干为我推十神，对照今日流年、流月、流日干支和日支冲合，不替用户判断喜用神。</li>
+   <li><b>紫微 · 今日</b>：按安星法排本命盘，取流日命宫所在本命宫位和流日四化。</li>
+   <li><b>今日黄历</b>：宜忌、值神（黄道/黑道）、建除十二值星、二十八宿、冲煞、彭祖百忌、喜神福神财神方位。</li>
+   <li>每张签都写明依据；释义里的“通行释义”是今人常用的概括，不是古籍原文。</li>
+  </ul>
+  <h3>开源库与数据</h3>
+  <ul><li>lunar-javascript（MIT）：农历、节气、八字、黄历</li><li>iztro（MIT）：紫微斗数排盘</li><li>liuren-ts-lib（Apache-2.0，依赖 tyme4ts，MIT）：大六壬排盘</li><li>《周易》卦爻辞文本取自 @freizl/yijing（MIT）；《梅花易数》原文条目取自 opencode-tianji 数据（MIT）</li></ul>
+  <h3>抽签动效时序</h3>
+  <div class="tbl"><table><tr><th>阶段</th><th>时长</th><th>做什么</th></tr>
+  <tr><td>按下</td><td>120ms</td><td>签筒压扁，所有签上抬 8px</td></tr>
+  <tr><td>摇签</td><td>1050ms</td><td>±14° 衰减摇摆；每支签随机跳动；14 次碰撞声 + 短震动</td></tr>
+  <tr><td>出签 / 飞入</td><td>820ms</td><td>选中的签冲出，横转 90° 飞到中心</td></tr>
+  <tr><td>展开</td><td>300 + 约 550ms</td><td>三折便签弹出，上折页翻开到一半时下折页接着翻，两页交叠进行</td></tr>
+  <tr><td>换签筒</td><td>约 1.8s</td><td>签全部飞出 → 旧筒滑出 → 新筒滑入回弹 → 签一支支落进新筒，每支落地都有声音</td></tr>
+  <tr><td>换签种</td><td>约 1.3s</td><td>签飞出，再按新签种的签头样式落回</td></tr></table></div>
+  <h3>日期选择</h3>
+  <p>自绘日历：每格同时显示公历和农历（初一显示月份，节气日显示节气名），左右滑动或点箭头翻月，点年月进入年份/月份网格，选中后自动收起。写日记时有“今天 / 昨天 / 前天”快捷键；选出生日期时直接从年份开始。</p>
+  <h3>数据结构</h3>
+<pre class="code">Entry { id, date, text, moods: string[], weather (默认 sunny), todos? }
+Settings { palette, font, cup, sound, method,
+  profile: { name, gender, birth: "YYYY-MM-DD", hour: 0–12 | null },
+  customMoods, customWeather }</pre>
+  <h3>落地建议</h3>
+  <ul>
+   <li><b>微信小程序</b>：三个排盘库都是纯 JS，可以直接放进小程序；个人信息用 wx.setStorageSync 存本地，涉及出生日期属于个人信息，上线前要写进隐私协议并做授权说明。</li>
+   <li><b>App</b>：Flutter 可用 lunar 的 Dart 版本；React Native 可直接用这三个 JS 库。</li>
+   <li>这个原型的数据只存在当前浏览器，换设备不会同步。</li>
+  </ul>`;
+}
+
+/* ---------- init ---------- */
+applyTheme();applyDeco();applyCup();renderFilters();resetWrite();renderCup(true);
+})();
