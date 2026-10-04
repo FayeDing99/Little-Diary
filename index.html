@@ -180,6 +180,26 @@ main{position:relative;z-index:1;min-height:0}
 .o-big{font-family:var(--f-classic);font-weight:600;font-size:34px;letter-spacing:.14em;line-height:1.2;margin:10px 0 2px;display:flex;align-items:center;gap:10px}
 .lvl{display:inline-block;padding:1px 8px;border:1.2px solid currentColor;border-radius:4px;font-family:var(--f-classic);font-size:13px;letter-spacing:.16em;font-weight:400}
 .lvl.good{color:var(--good)}.lvl.bad{color:var(--bad)}.lvl.mid{color:var(--ink-2)}
+.lvl.soft{color:var(--ink-2);border-style:dashed}
+.grade{margin:10px 0 2px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--paper)}
+.grade .gtop{display:flex;align-items:center;gap:12px}
+.grade .gl{font-family:var(--f-classic);font-size:22px;font-weight:600;letter-spacing:.2em}
+.grade.good .gl{color:var(--good)}.grade.mid .gl{color:var(--ink)}.grade.soft .gl{color:var(--ink-2)}.grade.bad .gl{color:var(--bad)}
+.gdots{display:flex;gap:5px;margin-left:auto}
+.gdots i{width:7px;height:7px;border-radius:50%;background:var(--line)}
+.grade.good .gdots i.on{background:var(--good)}.grade.mid .gdots i.on{background:var(--ink)}.grade.soft .gdots i.on{background:var(--ink-2)}.grade.bad .gdots i.on{background:var(--bad)}
+.gdots i.on{transform:scale(1.35)}
+.grade .gb{margin-top:6px;font-size:12px;line-height:1.7;color:var(--ink-2)}
+.gsrc{display:block;margin-top:3px;font-size:11px;opacity:.85}
+.advice{background:var(--blush);border-radius:10px;padding:10px 12px;border:1px solid var(--blush-2)}
+.advice h4{color:var(--accent)}
+.advice .gloss,.gloss{margin:-2px 0 6px 12px;font-size:12px;line-height:1.7;color:var(--ink-2)}
+.tips{margin-top:8px;padding-top:8px;border-top:1px dashed var(--blush-2)}
+.ttag{display:inline-block;font-size:10.5px;letter-spacing:.12em;padding:1px 7px;border-radius:999px;border:1px solid var(--accent);color:var(--accent)}
+.tips ul{margin:6px 0 0;padding-left:18px}
+.tips li{font-size:13px;line-height:1.75;margin:2px 0}
+.tips b{font-weight:500}
+.qhint.repeat .quote{margin:6px 0}
 .path{display:flex;align-items:center;gap:4px;flex-wrap:wrap;font-size:12px;color:var(--ink-2);margin:8px 0 4px}
 .path span{padding:2px 8px;border-radius:999px;background:var(--blush);color:var(--ink)}
 .path span.on{background:var(--accent);color:var(--accent-ink)}
@@ -221,7 +241,7 @@ main{position:relative;z-index:1;min-height:0}
 .chuan div b{font-family:var(--f-classic);font-size:18px;font-weight:600}
 .chuan small{color:var(--ink-2);font-size:11px}
 .yj{display:flex;flex-wrap:wrap;gap:5px}
-.yj span{font-size:12.5px;padding:2px 9px;border-radius:999px;background:var(--blush)}
+.yj span{font-size:12.5px;padding:2px 9px;border-radius:999px;background:var(--blush);cursor:pointer;text-decoration:underline dotted var(--line-strong);text-underline-offset:3px}
 .yj.ji span{background:transparent;border:1px solid var(--line);color:var(--ink-2)}
 
 .plain{margin:14px 0 4px;padding:12px 14px;border-radius:8px;background:var(--blush);border:1px solid var(--blush-2)}
@@ -526,7 +546,6 @@ pre.code{background:var(--paper);border:1px solid var(--hair);border-radius:10px
   <div class="sheet" id="spec" hidden></div>
   <div class="bs" id="bs" hidden><div class="scrim" id="bsScrim"></div><div class="bs-card" id="bsCard"></div></div>
 </div>
-
 <script src="js/xdata.js"></script>
 <script src="js/vendor.js"></script>
 <script src="js/app.js"></script>

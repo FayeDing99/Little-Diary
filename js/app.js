@@ -464,24 +464,40 @@ const HE6={子:'丑',丑:'子',寅:'亥',亥:'寅',卯:'戌',戌:'卯',辰:'酉'
 const nowLunar=()=>X.Solar.fromDate(new Date()).getLunar();
 const lunarStamp=L=>`农历${L.getMonthInChinese()}月${L.getDayInChinese()} · ${L.getTimeZhi()}时`;
 const qline=(t,c)=>`<div class="quote">${t}${c?`<cite>${c}</cite>`:''}</div>`;
-const lvl=(t,k)=>`<span class="lvl ${k}">${t}</span>`;
+const lvl=(t,k)=>k==='bad'&&S.gentle!==false&&t==='凶'?'':`<span class="lvl ${k==='bad'&&S.gentle!==false?'soft':k}">${t}</span>`;
+
+/* ---- 七级吉凶 + 怎么办 ---- */
+const GRADES=['大吉','中吉','小吉','平','小凶','中凶','大凶'],GENTLE={4:'宜缓',5:'宜慎',6:'宜守'};
+const gentleOn=()=>S.gentle!==false;
+const gName=g=>gentleOn()&&g>=4?GENTLE[g]:GRADES[g];
+const gKind=g=>g<=2?'good':g===3?'mid':gentleOn()?'soft':'bad';
+const MED='身体的事请以医生的意见为准，这里只是参考；不舒服的话，可以早点去看看。';
+const BUGUO=['无咎者，善补过也。','《周易·系辞上》','无咎：没有过错带来的灾祸。意思是：能及时补救过失，就不会有咎害。'];
+function gradeHTML(g,basis){
+  return `<div class="grade ${gKind(g)}"><div class="gtop"><span class="gl">${gName(g)}</span><span class="gdots" aria-label="七级中第${g+1}级">${GRADES.map((_,i)=>`<i class="${i===g?'on':''}"></i>`).join('')}</span></div><div class="gb">${basis}<span class="gsrc">这是几项古法合看的参考，不是定论；人和事都比卦象复杂，最后怎么做，还是由你来定。</span></div></div>`}
+function adviceHTML(g,classic,tips,note){
+  const qs=classic.map(c=>qline(c[0],c[1])+(c[2]?`<p class="gloss">${c[2]}</p>`:'')).join('');
+  return `<div class="sec advice"><h4>${g>=4?'可以怎么做':'怎么用好'}</h4>${qs}${note?`<p class="gloss">${note}</p>`:''}<div class="tips"><span class="ttag">今人建议</span><ul>${tips.map(t=>`<li>${t}</li>`).join('')}</ul></div></div>`}
+/* 温和模式下，偏凶的签把「怎么办」放在最前 */
+const arrange=(g,plain,adv)=>gentleOn()&&g>=4?adv+plain:plain+adv;
+function gradeDesc(){return '七级：大吉、中吉、小吉、平、小凶、中凶、大凶。'+(gentleOn()?'温和显示下，小凶、中凶、大凶写作宜缓、宜慎、宜守。':'')}
 
 /* ---- 大白话 ---- */
 const plainBox=t=>`<div class="plain">${t}</div>`;
 const XLR_PLAIN=[
  {综合:'大安是六宫里最稳的一宫，事事顺当。「将军回田野」是收兵归田之象，宜守成、按原计划稳稳地办，不宜冒进；最后一句提醒细节还要再仔细推敲。',失物:'东西没丢远，多半就在附近。',行人:'等的人还没动身。',求财:'想谋的事，往东边去求。',疾病:'病情不碍事。',官事:'歌诀没专门讲官事；大安主平稳，可以按平稳来看。',家宅:'家里平安。'},
- {综合:'事情拖拖拉拉、一时难成，眼下还看不清楚。要防口舌是非，人际上平平。',失物:'往南边找能找到；要追讨的东西，抓紧去讨才能如愿。',行人:'出门的人还没踏上归程。',求财:'所谋之事还不明朗，一时难成。',疾病:'歌诀没专门讲疾病；留连主拖延，事情容易反复。',官事:'公事官司只宜放慢，别急。',家宅:'歌诀没专门讲家宅；人事平平。'},
+ {综合:'事情拖拖拉拉、一时难成，眼下还看不清楚。也提醒留意口舌是非，人际上平平。',失物:'往南边找能找到；要追讨的东西，抓紧去讨才能如愿。',行人:'出门的人还没踏上归程。',求财:'所谋之事还不明朗，一时难成。',疾病:'歌诀没专门讲疾病；留连主拖延，事情容易反复。',官事:'公事官司宜放慢一些，不必着急。',家宅:'歌诀没专门讲家宅；人事平平。'},
  {综合:'喜事很快就到，事情进展快、顺利。',失物:'往申、未、午方（大致西南到正南）找，可以在路上问问人。',行人:'出门的人有消息了。',求财:'求财往南边去。',疾病:'病人没有大碍。',官事:'官事有福气照应。',家宅:'家宅、家畜都吉。'},
- {综合:'主口舌争执，要特别防官非和是非，家里也容易出些怪事，凡事小心说话。',失物:'赶紧去讨、去找，拖久了更难找回。',行人:'出门的人路上会受些惊吓。',求财:'歌诀没专门讲求财；赤口主口舌是非。',疾病:'原句是「病者出西方」，并提醒防染时疫。',官事:'官非一定要防。',家宅:'家里鸡犬（一作六畜）作怪，不太安宁。'},
+ {综合:'主口舌争执，古人提醒多留意官非和是非，家里也容易有些小状况，说话可以多留心。',失物:'宜早点去讨、去找，拖久了可能更难找回。',行人:'出门的人路上会受些惊吓。',求财:'歌诀没专门讲求财；赤口主口舌是非。',疾病:'原句是「病者出西方」，并提醒防染时疫。',官事:'和官方、机构打交道的事，可以多留意分寸。',家宅:'家里鸡犬（一作六畜）作怪，不太安宁。'},
  {综合:'很吉利，事情好商量，会有女性来报喜，凡事和和气气就能成。',失物:'往西南（坤方）找。',行人:'出门的人马上就到。',求财:'交易买卖很顺。',疾病:'原句是「病者祈上苍」，病人宜祈福求安。',官事:'歌诀没专门讲官事；小吉主凡事和合。',家宅:'歌诀没专门讲家宅；小吉主凡事和合。'},
  {综合:'不吉，事情容易落空；和女性相关的事多别扭不顺。',失物:'东西不容易找回来。',行人:'出门的人路上可能有灾。',求财:'求财没有收益。',疾病:'病人像遇到暗中作祟，经过禳解可以安康。',官事:'官事有刑伤。',家宅:'歌诀没专门讲家宅；空亡主落空不祥。'}];
 const GUA_PLAIN={"乾":["杂卦","乾刚","刚健有力"],"坤":["杂卦","坤柔","柔顺承载"],"屯":["序卦","屯者，物之始生也","万物初生，起步艰难"],"蒙":["序卦","蒙者，蒙也，物之稺也","尚在蒙昧，需要启蒙、学习"],"需":["杂卦","需，不进也","等待时机，暂不前进"],"讼":["杂卦","讼，不亲也","争执不和"],"师":["序卦","师者，众也","兴众用兵，靠众人和纪律"],"比":["序卦","比者，比也","亲近相辅"],"小畜":["杂卦","小畜，寡也","积蓄还少"],"履":["杂卦","履，不处也","一步步践行，不停留，也要小心"],"泰":["序卦","泰者，通也","通泰顺畅"],"否":["杂卦","否泰，反其类也","闭塞不通，与泰相反"],"同人":["杂卦","同人，亲也","与人同心亲近"],"大有":["杂卦","大有，众也","所有丰盛"],"谦":["杂卦","谦轻","自处谦下"],"豫":["杂卦","豫怠也","安乐，也要防松懈"],"随":["杂卦","随，无故也","随从、顺应，不拘守旧故"],"蛊":["序卦","蛊者，事也","有事待整治"],"临":["序卦","临者，大也","居上临下、亲临其事"],"观":["杂卦","临观之义，或与或求","观察，也被人观看"],"噬嗑":["序卦","嗑者，合也","咬合，除去中间的阻隔"],"贲":["序卦","贲者，饰也","文饰装点"],"剥":["序卦","剥者，剥也","剥落衰败"],"复":["杂卦","复，反也","回返、重新开始"],"无妄":["杂卦","无妄，灾也","不妄为，防意外之灾"],"大畜":["杂卦","大畜，时也","大有积蓄，待时而用"],"颐":["杂卦","颐，养正也","颐养，养之以正"],"大过":["杂卦","大过，颠也","过度失衡"],"坎":["序卦","坎者，陷也","陷入险境"],"离":["序卦","离者，丽也","附着、依附"],"咸":["杂卦","咸，速也","彼此感应，来得快"],"恒":["序卦","恒者，久也","恒久"],"遯":["序卦","遯者，退也","退避"],"大壮":["杂卦","大壮则止","强盛之时宜知止"],"晋":["序卦","晋者，进也","上进"],"明夷":["序卦","夷者，伤也","光明受伤"],"家人":["杂卦","家人，内也","家内之道"],"睽":["序卦","睽者，乖也","乖离不合"],"蹇":["序卦","蹇者，难也","行路艰难"],"解":["序卦","解者，缓也","困难缓解"],"损":["杂卦","损益，盛衰之始也","减损"],"益":["杂卦","损益，盛衰之始也","增益"],"夬":["序卦","夬者，决也","决断"],"姤":["序卦","姤者，遇也","相遇"],"萃":["序卦","萃者，聚也","聚集"],"升":["序卦","聚而上者谓之升","逐步上升"],"困":["序卦","升而不已必困","困穷受限"],"井":["杂卦","井通","通达，养人不穷"],"革":["杂卦","革，去故也","去旧"],"鼎":["杂卦","鼎，取新也","取新"],"震":["序卦","震者，动也","震动"],"艮":["序卦","艮者，止也","止"],"渐":["序卦","渐者，进也","循序渐进"],"归妹":["杂卦","归妹，女之终也","女子出嫁之象"],"丰":["序卦","丰者，大也","盛大"],"旅":["杂卦","亲寡，旅也","在外漂泊，亲人少"],"巽":["序卦","巽者，入也","顺而能入"],"兑":["序卦","兑者，说也","喜悦"],"涣":["序卦","涣者，离也","离散"],"节":["杂卦","节，止也","节制"],"中孚":["杂卦","中孚，信也","诚信"],"小过":["杂卦","小过，过也","稍有过越"],"既济":["杂卦","既济，定也","事已定"],"未济":["序卦","物不可穷也","事未完成，还在路上"]};
 const gp=n=>{const g=GUA_PLAIN[n];return g?`${g[2]}（《${g[0]}》：“${g[1]}”）`:""};
-const TI_PLAIN={旺:'体卦在这个季节当令而旺，你这边底气足。',衰:'体卦在这个季节失令而衰，你这边力量偏弱，要多给自己留余地。',不旺不衰:'体卦在这个季节不旺不衰，底气一般。'};
+const TI_PLAIN={旺:'体卦在这个季节当令而旺，你这边底气足。',衰:'体卦在这个季节失令而衰，你这边力量偏弱，可以多给自己留些余地。',不旺不衰:'体卦在这个季节不旺不衰，底气一般。'};
 const REL_PLAIN={体克用:'体克用：你能压得住所问之事，书上算吉。',用克体:'用克体：所问之事反过来压着你，书上算凶。',体生用:'体生用：你在往外付出、消耗，书上说有耗失之患。',用生体:'用生体：所问之事在帮你、给你助力，书上说有进益之喜。',体用比和:'体用比和：你和所问之事五行相同，书上说百事顺遂。'};
 const LQ_PLAIN={官鬼:'压力、官事、病痛这类事',父母:'文书、长辈、房屋这类事',妻财:'钱财、收入这类事',子孙:'喜事、晚辈、化解烦忧这类事',兄弟:'同辈、竞争、花钱这类事'};
 const JIANG_PLAIN={贵人:'有尊长贵人相助',腾蛇:'有惊扰、怪异之事',螣蛇:'有惊扰、怪异之事',朱雀:'有文书或口舌',六合:'有和合、交易之事',勾陈:'有纠缠、迟滞',青龙:'有财喜',天空:'虚而不实，防空口许诺',白虎:'防伤损、疾病',太常:'有吃喝、衣物、礼节之事',玄武:'防失窃、暗昧之事',太阴:'有隐秘、私下之事',天后:'有女性相助或恩泽'};
-const SS_PLAIN={比肩:'今天的能量和你同类，适合靠自己、和同伴一起做事，也容易各自坚持己见。',劫财:'今天和你同类但阴阳相反，常说主竞争、分走资源，花钱和人情往来要多留心。',食神:'今天是你“生出去”的力量，适合表达、享受、放松一下。',伤官:'今天也是你“生出去”的力量，但更锋利，想法多、表达欲强，说话要注意分寸。',偏财:'今天是你能掌控的财，偏向机会和人际带来的流动之财。',正财:'今天是你能掌控的财，偏向踏实工作换来的稳定收入，适合务实做事。',七杀:'今天的力量在克你，而且来势较猛，压力和挑战偏多，也是逼出魄力的时候。',正官:'今天的力量在约束你，讲规矩、讲责任，适合按章办事、维护名声。',偏印:'今天的力量在生扶你，偏向独自思考、钻研冷门的东西。',正印:'今天的力量在生扶你，像有人照顾、托底，适合学习、休整、向长辈请教。'};
+const SS_PLAIN={比肩:'今天的能量和你同类，适合靠自己、和同伴一起做事，也容易各自坚持己见。',劫财:'今天和你同类但阴阳相反，常说主竞争、分走资源，花钱和人情往来可以多留心。',食神:'今天是你“生出去”的力量，适合表达、享受、放松一下。',伤官:'今天也是你“生出去”的力量，但更锋利，想法多、表达欲强，说话可以多留意分寸。',偏财:'今天是你能掌控的财，偏向机会和人际带来的流动之财。',正财:'今天是你能掌控的财，偏向踏实工作换来的稳定收入，适合务实做事。',七杀:'今天的力量在克你，而且来势较猛，压力和挑战偏多，也是逼出魄力的时候。',正官:'今天的力量在约束你，讲规矩、讲责任，适合按章办事、维护名声。',偏印:'今天的力量在生扶你，偏向独自思考、钻研冷门的东西。',正印:'今天的力量在生扶你，像有人照顾、托底，适合学习、休整、向长辈请教。'};
 const ZX_PLAIN={建:'建日，适合开始新事情、出行',除:'除日，适合除旧、打扫、治病',满:'满日，主丰满',平:'平日，各方面平平',定:'定日，适合定下事情、签约',执:'执日，适合执守、收拾整理',破:'破日，大事一般不宜办',危:'危日，凡事小心谨慎',成:'成日，诸事易成',收:'收日，适合收获、收账',开:'开日，适合开张、开始',闭:'闭日，宜收藏，不宜大动'};
 
 /* ---- 小六壬 ---- */
@@ -492,9 +508,27 @@ const XLR=[
  {n:'赤口',j:'凶',v:'赤口主口舌，官非切宜防，失物速速讨，行人有惊慌。鸡犬多作怪，病者出西方，更须防咒诅，恐怕染瘟殃。',alt:'「切宜防」一作「切要防」；「失物速速讨」一作「失物急去寻」；「鸡犬」一作「六畜」；「恐怕」一作「诚恐」。'},
  {n:'小吉',j:'吉',v:'小吉最吉昌，路上好商量，阴人来报喜。失物在坤方，行人立便至，交易甚是强，凡事皆和合，病者祈上苍。',alt:'「交易」一作「交关」；「祈上苍」一作「叩穹苍」。'},
  {n:'空亡',j:'凶',v:'空亡事不祥，阴人多乖张，求财无利益。行人有灾殃，失物寻不见，官事有刑伤，病人逢暗鬼，解禳保安康。',alt:'「解禳保安康」一作「析解可安康」。'}];
+const XLR_WX=['木','土','火','金','水','土'];
+/* 各宫对各类事的吉凶，取自歌诀原句；空串表示歌诀未专门讲，按本宫通论 */
+const XLR_TOPIC=[
+ {综合:[1,'大安事事昌'],失物:[1,'失物去不远'],行人:[0,'行人身未动'],求财:[1,'求谋在东方'],疾病:[1,'病者主无妨'],家宅:[1,'宅舍保安康']},
+ {综合:[-1,'留连事难成'],失物:[1,'失物南方见'],行人:[-1,'去者未回程'],求财:[-1,'求谋日未明'],官事:[0,'官事只宜缓']},
+ {综合:[1,'速喜喜来临'],失物:[1,'失物申未午'],行人:[1,'行人有音信'],求财:[1,'求财向南行'],疾病:[1,'病者无祸侵'],官事:[1,'官事有福德'],家宅:[1,'田宅六畜吉']},
+ {综合:[-1,'赤口主口舌'],失物:[0,'失物速速讨'],行人:[-1,'行人有惊慌'],疾病:[-1,'恐怕染瘟殃'],官事:[-1,'官非切宜防'],家宅:[-1,'鸡犬多作怪']},
+ {综合:[1,'小吉最吉昌'],失物:[1,'失物在坤方'],行人:[1,'行人立便至'],求财:[1,'交易甚是强'],疾病:[0,'病者祈上苍'],家宅:[1,'凡事皆和合']},
+ {综合:[-1,'空亡事不祥'],失物:[-1,'失物寻不见'],行人:[-1,'行人有灾殃'],求财:[-1,'求财无利益'],疾病:[-1,'病人逢暗鬼'],官事:[-1,'官事有刑伤']}];
+const xlrVal=(i,q)=>{const t=XLR_TOPIC[i][q||'综合'];return t?t:[XLR[i].j==='吉'?1:-1,'']};
+const XLR_ADV=[
+ {c:[['宅舍保安康……仔细更推详。','小六壬歌诀 · 大安','「仔细更推详」：顺利的时候，也值得把细节再推敲一遍。']],t:['可以按原来的计划稳稳往前走，不必急着另起炉灶。','有空的话，不妨把重要的细节再核对一遍。']},
+ {c:[['官事只宜缓……急讨方称心。更须防口舌。','小六壬歌诀 · 留连','公事宜放缓；需要追讨的事，主动一些更容易如愿；也提醒留意口舌。']],t:['慢一点也没关系，可以先完成手边能推进的一小步。','需要别人回复的事，方便的话可以主动问一声。','说话时给彼此留点余地，情绪上来时，决定可以晚一点再做。']},
+ {c:[['速喜喜来临……行人有音信。','小六壬歌诀 · 速喜','好消息来得快。']],t:['有好消息的话，可以趁热推进。','在等回音的事，今天问一问也许会有进展。']},
+ {c:[['官非切宜防，失物速速讨。','小六壬歌诀 · 赤口','古人提醒留意口舌是非；要找、要讨的东西，宜早不宜迟。']],t:['今天沟通时可以多一点耐心，重要的事不妨用文字说清楚，也先听听对方怎么说。','有争执或要签字的事，方便的话可以缓一天。','丢了东西的话，早点去找会更容易找回。']},
+ {c:[['路上好商量……凡事皆和合。','小六壬歌诀 · 小吉','事情好商量，以和为贵。']],t:['今天适合商量、合作、谈条件。','语气放软一点，往往更容易谈拢。']},
+ {c:[['病人逢暗鬼，解禳保安康。','小六壬歌诀 · 空亡','解禳：古人指祈祷消灾。歌诀本身给的化解之道，是主动去「解」，而不是干等。']],t:['期望可以先放低一些，也不必把希望都押在一处。','重要的决定不妨多核实一次，口头说定的事可以落到纸面上。','今天也许更适合整理、收尾，新的事情可以等等再开始。']}];
 const QDESC={综合:'不限定哪一类事，看这件事整体顺不顺。',失物:'东西丢了，问能不能找回、往哪个方向找。',行人:'在等的人、出门在外的人，什么时候回来或到达。',求财:'想赚钱、谈生意、谋一件事，能不能如愿。',疾病:'自己或家人身体不舒服，问病情轻重。',官事:'官司、公事，和单位、机构打交道的事。',家宅:'家里、住处安不安宁。',
-  人事:'日常人际和办事，拿不准归哪类时就选它。',求谋:'谋划一件事，问能不能成、成得快慢。',求名:'考试、升职、评选、名声。',交易:'买卖、签约、谈价钱。',出行:'要出门、旅行，问路上顺不顺。',谒见:'去见某个人，问见不见得到、有没有收获。',婚姻:'恋爱、婚事能不能成。',天时:'问天气，看晴还是雨。',饮食:'饭局、吃喝能不能成、丰不丰盛。'};
+  人事:'日常人际和办事，拿不准归哪类时就选它。',求谋:'谋划一件事，问能不能成、成得快慢。',求名:'考试、升职、评选、名声。',交易:'买卖、签约、谈价钱。',出行:'要出门、旅行，问路上顺不顺。',谒见:'去见某个人，问见不见得到、有没有收获。',婚姻:'恋爱、婚事能不能成。',婚恋:'感情、恋爱、婚事的走向。男生看妻财、女生看官鬼，都看六合、天后（填了性别才会加上妻财或官鬼）。',考试文书:'考试、证书、合同、文件、消息。看父母和朱雀。',工作:'求职、升职、工作上的事。看官鬼和青龙。',天时:'问天气，看晴还是雨。',饮食:'饭局、吃喝能不能成、丰不丰盛。'};
 const QDESC_MH={求财:'求财、赚钱，问有没有财、会不会损耗。',行人:'等的人、出门在外的人什么时候回来。',失物:'东西丢了，问能不能找回。',家宅:'家里安不安稳，有进益还是有破耗。',疾病:'身体不舒服，问病情走向、好不好治。'};
+const QDESC_DLR={综合:'不限定哪一类事，只看三传和天将。',求财:'赚钱、生意、收入。看妻财和青龙。',疾病:'身体不舒服，问病情。看官鬼和白虎（病神）。',出行:'出门、旅行、搬动。看驿马是否进入三传。'};
 const XLR_Q={综合:null,失物:/失物/,行人:/行人|去者/,求财:/求财|求谋|交易/,疾病:/病/,官事:/官/,家宅:/宅|田宅/};
 function xlrPlain(i,q){const P=XLR_PLAIN[i],g=XLR[i];let t=`<p>落在<b>${g.n}</b>，${g.j}。${P.综合}</p>`;
   if(q&&q!=='综合')t=`<p>问${q}：<b>${P[q]}</b></p>`+t;
@@ -505,14 +539,25 @@ function castXLR(o){
   else{const m=Math.abs(L.getMonth()),d=L.getDay(),h=ZHI.indexOf(L.getTimeZhi())+1;const i1=(m-1)%6,i2=(i1+d-1)%6,i3=(i2+h-1)%6;
     steps=[[`${L.getMonthInChinese()}月`,i1],[L.getDayInChinese(),i2],[`${L.getTimeZhi()}时`,i3]]}
   const g=XLR[steps[2][1]],re=XLR_Q[o.q];
+  const pos=['起因','过程','结果'],vv=steps.map(s=>xlrVal(s[1],o.q));
+  const wx=steps.map(s=>XLR_WX[s[1]]),endWx=wx[2];
+  const wxRel=[0,1].map(i=>{const a=wx[i];return a===endWx?['比和',0]:SHENG[a]===endWx?['生结果宫',.5]:KE[a]===endWx?['克结果宫',-.5]:SHENG[endWx]===a?['被结果宫所生',0]:['被结果宫所克',0]});
+  const sc=vv[0][0]+vv[1][0]+2*vv[2][0]+wxRel[0][1]+wxRel[1][1];
+  const grade=sc>=3.5?0:sc>=2.5?1:sc>=1?2:sc>-1?3:sc>-2.5?4:sc>-3.5?5:6;
+  const f=n=>(n>0?'+':'')+n,vt=v=>v>0?'吉':v<0?'凶':'平';
+  const ji=vv.map(v=>v[0]>0),end=vv[2][0];
+  const trend=vv.every(v=>v[0]>0)?'一路顺':vv.every(v=>v[0]<0)?'一路阻':vv[0][0]<0&&end>0?'先难后易':vv[0][0]>0&&end<0?'先顺后阻':end>0?'结果偏顺':end<0?'结果偏阻':vv[0][0]>0?'前顺后平':vv[0][0]<0?'前阻后平':'平稳';
+  const basis=`${steps.map((s,i)=>`${pos[i]}${XLR[s[1]].n}（${vv[i][1]?`「${vv[i][1]}」`:'本宫通论'}，${vt(vv[i][0])} ${f(vv[i][0]*(i===2?2:1))}）`).join(' → ')}；五行：${steps.slice(0,2).map((s,i)=>`${XLR[s[1]].n}${wx[i]}${wxRel[i][0]}（${f(wxRel[i][1])}）`).join('、')}，结果宫${XLR[steps[2][1]].n}属${endWx}。合计 ${f(sc)}，走向${trend}，为${gName(grade)}。<span class="gsrc">各宫对「${o.q}」的吉凶取自歌诀原句，歌诀没专门讲的按本宫通论；三宫读作起因、过程、结果，结果宫记两分；六宫五行取道家、江氏一派（大安木、留连土、速喜火、赤口金、小吉水、空亡土，留连、小吉另有异说）；分值和五行加减是本程序的口径。</span>`;
+  const adv=adviceHTML(grade,[...XLR_ADV[steps[2][1]].c,...(grade>=4?[BUGUO]:[])],[...(o.q==='疾病'?[MED]:[]),...(o.q&&o.q!=='综合'?[`问${o.q}：${XLR_PLAIN[steps[2][1]][o.q]}`,XLR_ADV[steps[2][1]].t[0]]:XLR_ADV[steps[2][1]].t),...(trend==='先难后易'?['开头可能不太顺，后面会慢慢转好，可以再坚持一下。']:trend==='先顺后阻'?['开头比较顺，收尾的时候可以多留意一些。']:[]),...(wxRel.some(r=>r[1]<0)?[`前面的${steps.slice(0,2).filter((s,i)=>wxRel[i][1]<0).map(s=>XLR[s[1]].n).join('、')}克结果宫：阻力可能来自${steps.slice(0,2).map((s,i)=>wxRel[i][1]<0?pos[i]:'').filter(Boolean).join('和')}阶段，可以先把那一环理一理。`]:[])]);
   const verse=g.v.split(/(?<=[，。])/).map(p=>re&&re.test(p)?`<mark>${p}</mark>`:p).join('');
   const html=`<span class="tape"></span>
    <div class="o-head"><span class="o-title">小六壬</span><span class="badge">${o.how==='num'?'报数起课':'时间起课'}</span></div>
    <div class="o-meta">${todayStr().replace(/-/g,'.')} · ${lunarStamp(L)}</div>
    <div class="path">${steps.map((s,i)=>`${i?'→':''}<small>${s[0]}</small><span class="${i===2?'on':''}">${XLR[s[1]].n}</span>`).join(' ')}</div>
    <div class="o-big">${g.n}${lvl(g.j,g.j==='吉'?'good':'bad')}</div>
+   ${gradeHTML(grade,basis)}
    ${o.ask?`<div class="ask">所问：<b>${esc(o.ask)}</b></div>`:''}
-   ${plainBox(xlrPlain(steps[2][1],o.q))}
+   ${arrange(grade,plainBox(xlrPlain(steps[2][1],o.q)),adv)}
    <div class="verse">${verse}</div>
    ${re?`<div class="ask">已标出与「${o.q}」相关的句子。</div>`:''}
    <div class="ask">异文：${g.alt}</div>
@@ -541,13 +586,16 @@ const CAT_PLAIN={人事:['事情由你掌控，吉','对方或事情压着你，
  谒见:['见得到','见不到','难见，见了也没益处','见得到，见了还有收获','欢欢喜喜见面'],
  失物:['能找到，但要晚些','找不回来','很难找到','容易找到','东西没丢'],
  婚姻:['能成，但成得晚','不可成，成了也有害','难成，或因婚事有失','容易成，或因婚事有得','婚姻吉利'],
- 家宅:['家宅多吉','家宅多凶','多耗散，要防失盗','多进益，或有人馈赠','家宅安稳'],
+ 家宅:['家宅多吉','家宅多凶','多耗散，可以留意防盗','多进益，或有人馈赠','家宅安稳'],
  疾病:['病容易好，不用药也会好转','用药也难见效','病拖拖拉拉难好','很快就好','病容易好转'],
  饮食:['饮食有阻','吃不上','饭局难成','饮食丰盛','饮食丰足']};
 const REL_IDX={体克用:0,用克体:1,体生用:2,用生体:3,体用比和:4};
 const relTo=(ti,x)=>{const a=TRI_WX[ti],b=TRI_WX[x];return a===b?'比和':KE[a]===b?'体克':KE[b]===a?'克体':SHENG[a]===b?'体生':'生体'};
 const REL2={比和:['与体比和','好'],体克:['被体所克','好'],克体:['克体','不好'],体生:['耗体（体去生它）','有耗'],生体:['生体','好']};
 const TIANSHI=[['离','离多主晴'],['坎','坎多主雨'],['坤','坤乃阴晦'],['乾','乾主晴明'],['震','震多则春夏雷轰'],['巽','巽多则四时风烈'],['艮','艮多则久雨必晴'],['兑','兑多则不雨亦阴']];
+const yaoCi=t=>{let v=0;const tags=[];const h=(re,n,x)=>{if(re.test(t)){v+=x;tags.push(n);return true}return false};
+  h(/元吉|大吉/,'元吉',1)||h(/吉/,'吉',1);h(/凶/,'凶',-1);h(/[厉厲]/,'厉',-.5);h(/吝/,'吝',-.5);h(/悔亡/,'悔亡',.5)||h(/悔/,'悔',-.5);h(/[无無]咎/,'无咎',.5);h(/[无無]攸利/,'无攸利',-.5)||h(/[无無]不利/,'无不利',.5);
+  return{v:Math.max(-1,Math.min(1,v)),tags}};
 const MH_CATS=['人事','求谋','求财','求名','交易','出行','行人','谒见','失物','婚姻','家宅','疾病','天时','饮食'];
 function castMH(o){
   const L=nowLunar(),hz=ZHI.indexOf(L.getTimeZhi())+1;let up,low,mv,how;
@@ -570,6 +618,22 @@ function castMH(o){
   const isTS=o.q==='天时';
   const yongGood=relK!=='bad'&&relK!=='mid',bianGood=REL2[rB][1]==='好';
   const trend=yongGood&&!bianGood?'先吉后凶':!yongGood&&bianGood?'先凶后吉':yongGood?'始终偏吉':'始终偏不利';
+  const RS={体用比和:2,用生体:2,体克用:1,体生用:-1,用克体:-2},BS={生体:1,比和:1,体克:.5,体生:-.5,克体:-1},HS={生体:.5,克体:-.5,比和:.5};
+  const yc=yaoCi(G[3][mv-1]);
+  const sc=RS[rel]+BS[rB]+rH.reduce((t,[x,r])=>t+(HS[r]||0),0)+(tiState==='旺'?.5:tiState==='衰'?-.5:0)+yc.v;
+  const grade=sc>=3.5?0:sc>=2.5?1:sc>=1?2:sc>-1?3:sc>-2.5?4:sc>-3.5?5:6;
+  const fmt=n=>(n>0?'+':'')+n;
+  const helper=[...rH.filter(([x,r])=>r==='生体').map(([x])=>'互卦'+x),...(rB==='生体'?['变卦'+bianYong]:[])];
+  const basis=`本卦${rel}（${fmt(RS[rel])}）· 变卦${bianYong}${REL2[rB][0]}（${fmt(BS[rB])}）· 互卦${rH.map(([x,r])=>x+(r==='生体'?'生体':r==='克体'?'克体':r==='比和'?'比和（体党）':'无碍')).join('、')}（${fmt(rH.reduce((t,[x,r])=>t+(HS[r]||0),0))}）· 体卦${tiState}（${fmt(tiState==='旺'?.5:tiState==='衰'?-.5:0)}）· 动爻爻辞${yc.tags.length?'有「'+yc.tags.join('」「')+'」':'无吉凶断语'}（${fmt(yc.v)}）＝ ${fmt(sc)}，为${gName(grade)}。<span class="gsrc">原书说「不可拘执于一」，所以几项合看：体用、互变、卦气依《梅花易数》，互卦与体同五行算「体党」（「体党多而体势盛」）。爻辞的吉、凶、悔、吝、厉、无咎按《系辞》分轻重参入；原书认为年月日时、报数起卦属先天，「不必用《易》书之辞，专以卦断」，所以爻辞在这里只占小份量。分值和分级界线是本程序的口径。</span>`;
+  const mc=[];if(helper.length)mc.push(['欲知凶中有救，生體之卦存焉。','《梅花易数》卷二 · 疾病占',`本卦里${helper.join('、')}属${Object.keys(SHENG).find(k=>SHENG[k]===TRI_WX[ti])}，${Object.keys(SHENG).find(k=>SHENG[k]===TRI_WX[ti])}生${TRI_WX[ti]}，正是生体之卦。此句原在疾病占；《体用总诀》也说「用生體，有進益之喜」，生体为吉，各类占断同理。`]);
+  if(trend==='先凶后吉'||trend==='先吉后凶')mc.push([trend==='先凶后吉'?'用凶變吉者，先凶後吉。':'用吉變凶者，先吉後凶。','《梅花易数》卷二 · 體用生克篇之一',trend==='先凶后吉'?'眼前不顺，结局转好。':'开头顺，结局可能有变，可以多留意。']);
+  if(tiState==='旺'&&RS[rel]<0)mc.push(['若體逢克而乘旺，猶為庶幾。','《梅花易数》卷二 · 疾病占','体卦当令而旺，即使受克，也还有指望（原在疾病占，理同）。']);
+  const ZCL={体克用:['體克用，諸事吉。','体克用：你能掌控这件事。'],用克体:['用克體，諸事凶。','用克体：事情压着你，所以不妨避其锋芒、寻找助力。'],体生用:['體生用，有耗失之患。','耗失：付出多、收获少。知道耗在哪里，就能先把口子收紧。'],用生体:['用生體，有進益之喜。','进益：有收获、有长进。'],体用比和:['體用比和，則百事順遂。','比和：你和这件事五行相同，彼此顺。']};
+  if(!mc.length)mc.push([ZCL[rel][0],'《梅花易数》卷二 · 體用總訣',ZCL[rel][1]]);
+  if(grade>=4)mc.push(BUGUO);
+  const MH_TIP={用克体:['事情暂时有些压力，可以先避开锋芒，不必硬碰，缓一缓再出手。','不妨把事情拆小，从最有把握的一步开始。','也可以找找能帮上忙的人或资源，书上说的「生体之卦」就是这样的助力。'],体生用:['这件事可能比较耗钱或耗精力，可以先给自己定个上限，量力而为。','投入之前，不妨想想自己最想要的是什么。'],体克用:['事情大体在你掌控中，只是可能需要多一点时间和耐心。'],用生体:['事情在帮你，可以顺势而为，主动一些。'],体用比和:['和这件事气场相合，按自己的节奏推进就好。']};
+  const mtips=[...(o.q==='疾病'?[MED]:[]),...MH_TIP[rel],...(trend==='先吉后凶'?['开局顺利的时候，可以顺手把收尾也安排好。']:trend==='先凶后吉'?['前面难一点不代表结果不好，可以再撑一撑。']:[]),...(tiState==='衰'?['你这边的力量偏弱，可以多给自己留些余地，不必硬撑。']:[])];
+  const madv=isTS?'':adviceHTML(grade,mc,mtips);
   const allTri=[U,Lo,huLo,huUp,byBits(bian.slice(0,3)),byBits(bian.slice(3))];const cnt={};allTri.forEach(t=>cnt[t]=(cnt[t]||0)+1);
   let tsTxt='';if(isTS){const lines=TIANSHI.filter(([t])=>cnt[t]).sort((a,b)=>cnt[b[0]]-cnt[a[0]]);
     tsTxt=`<p>占天时不看体用，看本卦、互卦、变卦六个经卦里各卦出现的多少：${Object.entries(cnt).sort((a,b)=>b[1]-a[1]).map(([k,v])=>k+'×'+v).join('、')}。</p><p>按书上：${lines.map(([t,l])=>`<b>${l}</b>`).join('；')}。${mz&&('巳午'.includes(mz)&&cnt['离']&&!cnt['坎']?'夏天离多而无坎，主亢旱。':'亥子'.includes(mz)&&cnt['坎']&&!cnt['离']?'冬天坎多而无离，主雨雪。':'')}出现最多的卦分量最重。</p>`}
@@ -584,8 +648,9 @@ function castMH(o){
      <div class="gua"><b style="font-size:20px">${['初','二','三','四','五','上'][mv-1]}</b>动爻</div>
    </div>
    <div class="o-big" style="font-size:24px">${isTS?'天时不分体用':rel+lvl(relK==='good'?'吉':relK==='bad'?'凶':'耗',relK)}</div>
+   ${isTS?'':gradeHTML(grade,basis)}
    <div class="ask">体卦 <b>${ti}${TRI_WX[ti]}</b>（${season}${tiState}） · 用卦 <b>${yong}${TRI_WX[yong]}</b></div>
-   ${plainBox(isTS?tsTxt+`<p>本卦「${guaName(bits)}」，互卦「${guaName(hu)}」，变卦「${guaName(bian)}」。</p>`:`<p>体卦代表你，用卦代表${o.ask?'「'+esc(o.ask)+'」':'你问的事'}。${ti}属${TRI_WX[ti]}，${yong}属${TRI_WX[yong]}，${REL_PLAIN[rel]}${CAT_PLAIN[o.q]?`占${o.q}具体是：<b>${CAT_PLAIN[o.q][REL_IDX[rel]]}</b>。`:''}${TI_PLAIN[tiState]}</p><p>事情中段看互卦：${rH.map(([x,r])=>`${x}${TRI_WX[x]}${REL2[r][0]}`).join('，')}${rH.some(([x,r])=>r==='克体')?'，中途有阻力':rH.some(([x,r])=>r==='生体')?'，中途有助力':''}。结果看变卦：用卦变成${bianYong}${TRI_WX[bianYong]}，${REL2[rB][0]}，结果${REL2[rB][1]}。合起来是<b>${trend}</b>。</p><p class="sub">本卦「${guaName(bits)}」讲的是${gp(G[0])}；互卦「${guaName(hu)}」：${gp(D.GUA[hu][0])}；变卦「${guaName(bian)}」：${gp(GB[0])}。</p>`)}
+   ${arrange(isTS?0:grade,plainBox(isTS?tsTxt+`<p>本卦「${guaName(bits)}」，互卦「${guaName(hu)}」，变卦「${guaName(bian)}」。</p>`:`<p>体卦代表你，用卦代表${o.ask?'「'+esc(o.ask)+'」':'你问的事'}。${ti}属${TRI_WX[ti]}，${yong}属${TRI_WX[yong]}，${REL_PLAIN[rel]}${CAT_PLAIN[o.q]?`占${o.q}具体是：<b>${CAT_PLAIN[o.q][REL_IDX[rel]]}</b>。`:''}${TI_PLAIN[tiState]}</p><p>事情中段看互卦：${rH.map(([x,r])=>`${x}${TRI_WX[x]}${REL2[r][0]}`).join('，')}${rH.some(([x,r])=>r==='克体')?'，中途有阻力':rH.some(([x,r])=>r==='生体')?'，中途有助力':''}。结果看变卦：用卦变成${bianYong}${TRI_WX[bianYong]}，${REL2[rB][0]}，结果${REL2[rB][1]}。合起来是<b>${trend}</b>。</p><p class="sub">本卦「${guaName(bits)}」讲的是${gp(G[0])}；互卦「${guaName(hu)}」：${gp(D.GUA[hu][0])}；变卦「${guaName(bian)}」：${gp(GB[0])}。</p>`),madv)}
    <div class="sec"><h4>占${o.q}</h4>${qline(cat[0],'《梅花易数》'+cat[2].replace('梅花易数·',''))}${cat[1]?`<p style="font-size:12.5px;color:var(--ink-2)">白话：${cat[1]}</p>`:''}</div>
    <div class="sec"><h4>本卦卦辞</h4>${qline(`${G[0]}：${stripName(G[1])}`,'《周易》')}${qline(G[2],'《象》')}</div>
    <div class="sec"><h4>动爻爻辞</h4>${qline(G[3][mv-1],'《周易》')}</div>
@@ -597,6 +662,12 @@ function castMH(o){
 
 /* ---- 大六壬 ---- */
 const KETI={元首:'四课中只有一课上克下，取之为初传。',重审:'四课中只有一课下贼上，取之为初传。',知一:'有两课以上克贼，取与日干阴阳相比者为用。',比用:'有两课以上克贼，取与日干阴阳相比者为用。',涉害:'有两课以上克贼，与日干俱比或俱不比，取涉害深者为用；深浅相同，先取地盘四孟上神，次四仲、四季。',遥克:'四课无克贼，取上神与日干遥相克者为用（神克日为蒿矢，日克神为弹射）。',昴星:'四课无克又无遥克，阳日取地盘酉上神、阴日取天盘酉下神为初传。',别责:'四课不全（只得三课）又无克，阳日取干合之神、阴日取支前三合为用。',八专:'干支同位，四课只得两课。',伏吟:'月将加时同位，天地盘不动。',反吟:'天地盘六冲，天盘与地盘相对。'};
+const MA={申:'寅',子:'寅',辰:'寅',寅:'申',午:'申',戌:'申',巳:'亥',酉:'亥',丑:'亥',亥:'巳',卯:'巳',未:'巳'};
+const DLR_CATS=['综合','求财','考试文书','工作','疾病','婚恋','出行'];
+function dlrYS(q){const g=S.profile.gender;return{
+  求财:{lq:['妻财'],j:['青龙'],n:'妻财、青龙'},考试文书:{lq:['父母'],j:['朱雀'],n:'父母、朱雀'},工作:{lq:['官鬼'],j:['青龙'],n:'官鬼、青龙'},
+  疾病:{lq:['官鬼'],j:['白虎'],n:'官鬼、白虎',bad:true},婚恋:{lq:g==='男'?['妻财']:g==='女'?['官鬼']:[],j:['六合','天后'],n:'六合、天后'+(g==='男'?'、妻财':g==='女'?'、官鬼':'')},
+  出行:{lq:[],j:[],ma:true,n:'驿马'}}[q]||null}
 const JI_JIANG=['贵人','六合','青龙','太常','太阴','天后'];
 const LIUQIN={官鬼:'克日干者',父母:'生日干者',妻财:'日干所克',子孙:'日干所生',兄弟:'与日干同五行'};
 function dlrPlain(r,kong){const parts=[['开头','chuChuan'],['过程中','zhongChuan'],['最后','moChuan']].map(([n,k])=>{const v=r.sanChuan[k];
@@ -612,11 +683,30 @@ function castDLR(o){
   const ke=['ke1','ke2','ke3','ke4'].map((k,i)=>{const v=r.siKe[k];return`<div>${v[0][0]}<br>${v[0][1]}<small>${['一','二','三','四'][i]}课 · ${v[1]}</small></div>`}).join('');
   const ch=[['初传','chuChuan','事之始'],['中传','zhongChuan','事之中'],['末传','moChuan','事之终']].map(([n,k,m])=>{const v=r.sanChuan[k];const empty=kong.includes(v[0]);
     return`<div><small>${n}</small><b>${v[0]}</b><span>${v[1]} ${lvl(JI_JIANG.includes(v[1])?'吉将':'凶将',JI_JIANG.includes(v[1])?'good':'bad')}${empty?' '+lvl('空亡','mid'):''}</span><small>${v[2]}${v[3]?' · 遁'+v[3]:''}</small></div>`}).join('');
+  const CK=['chuChuan','zhongChuan','moChuan'],W3=[1,1,2],q=o.q||'综合',YS=dlrYS(q),dz=(di.bazi.split(' ')[2]||'')[1],ma=MA[dz];
+  const C=CK.map(k=>r.sanChuan[k]),isHit=v=>YS&&(YS.lq.includes(v[2])||YS.j.includes(v[1])||(YS.ma&&v[0]===ma));
+  const pts=C.map((v,i)=>{if(kong.includes(v[0]))return 0;if(YS&&YS.j.includes(v[1])&&!JI_JIANG.includes(v[1])&&!YS.bad)return 0;return(JI_JIANG.includes(v[1])?1:-1)*W3[i]});
+  const jsc=pts.reduce((a,b)=>a+b,0);
+  const hits=C.map((v,i)=>isHit(v)?i:-1).filter(i=>i>=0),live=hits.filter(i=>!kong.includes(C[i][0]));
+  let ysc=0,ysTxt='';if(YS){if(YS.bad){ysc=live.length?-1:hits.length?0:.5;ysTxt=live.length?`病神（${YS.n}）入传 ${'−1'}`:hits.length?'病神入传而空亡（0）':'病神不入传（+0.5）'}
+    else{ysc=live.length?1:hits.length?0:-.5;ysTxt=live.length?`类神（${YS.n}）见于${live.map(i=>['初','中','末'][i]+'传').join('、')}（+1）`:hits.length?`类神（${YS.n}）入传而空亡，未发动（0）`:`类神（${YS.n}）不入传（−0.5）`}}
+  let skc=0;const skl=[];C.forEach((v,i)=>{if(hits.includes(i)&&YS&&YS.lq.includes(v[2]))return;if(v[2]==='父母'){skc+=.5;skl.push(['初','中','末'][i]+'传生日干')}else if(v[2]==='官鬼'){skc-=.5;skl.push(['初','中','末'][i]+'传克日干')}});skc=Math.max(-1,Math.min(1,skc));
+  const sc=jsc+ysc+skc,f=n=>(n>0?'+':'')+n;
+  const grade=sc>=4?0:sc>=2.5?1:sc>=1?2:sc>-1?3:sc>-2.5?4:sc>-4?5:6;
+  const basis=`天将：${C.map((v,i)=>`${['初','中','末'][i]}传${v[1]}${kong.includes(v[0])?'（空亡，不计）':YS&&YS.j.includes(v[1])&&!JI_JIANG.includes(v[1])&&!YS.bad?'（为类神，不按凶将计）':`（${f(pts[i])}）`}`).join('、')}${YS?`；${ysTxt}`:''}；${skl.length?skl.join('、')+`（${f(skc)}）`:'三传不生不克日干（0）'} ＝ ${f(sc)}，为${gName(grade)}。<span class="gsrc">吉将、凶将，「末传为归结」，类神宜入传、不宜空亡，三传生日干为吉、克日干为凶，都是六壬通说；各项分值、末传记两分、空亡不计分是本程序的口径；课体、神煞未计入。</span>`;
+  const DLR_TIP={螣蛇:'遇到突发状况时，可以先缓一口气，弄清楚再回应。',腾蛇:'遇到突发状况时，可以先缓一口气，弄清楚再回应。',朱雀:'说话、发消息、交文书之前，可以多看一遍，口舌之争能少则少。',勾陈:'约定和条款不妨写清楚一些，可以少些拖延和纠缠。',天空:'对口头承诺可以先打个折，落到纸面上会更踏实。',白虎:'出行、运动时可以多注意安全，身体不舒服就早点休息。',玄武:'财物和账号可以收好一些，来路不明的消息多留个心。'};
+  const badJ=[...new Set(CK.map(k=>r.sanChuan[k]).filter(v=>!JI_JIANG.includes(v[1])&&!kong.includes(v[0])).map(v=>v[1]))];
+  const goodJ=[...new Set(CK.map(k=>r.sanChuan[k][1]).filter(j=>JI_JIANG.includes(j)))];
+  const dtips=[...badJ.map(j=>`${j}：${DLR_TIP[j]}`),...(goodJ.length?[`${goodJ.join('、')}是吉将：${goodJ.map(j=>JIANG_PLAIN[j]).join('，')}，可以借借这股力。`]:[]),...(kong.includes(r.sanChuan.moChuan[0])?['末传落空亡：结果可能不了了之，不妨把希望分散一些，不必都押在这一件事上。']:[])];
+  const QT={求财:['财路今天有动静，可以留意身边的机会。','财的事今天也许不急于一时，可以先做些准备。'],考试文书:['文书、消息方面有动静，可以多看看邮件和通知。','考试和文书的事，按部就班地准备就好。'],工作:['工作上有动静，可以主动一些。','工作上暂时平稳，可以先把手头的事做好。'],婚恋:['感情上有动静，可以多一点主动和坦诚。','感情的事不必着急，慢慢来也好。'],出行:['驿马入传，主动、出行，路上可以多注意安全。','课上没有明显的出行之象，如果要出门，按计划来就好。']};
+  if(q==='疾病')dtips.unshift(MED);else if(QT[q])dtips.unshift(QT[q][live.length?0:1]);
+  const dadv=adviceHTML(grade,grade>=4?[BUGUO]:[['吉凶者，失得之象也。','《周易·系辞上》','吉凶说的是得与失的征象，不是定数。']],dtips.length?dtips:['按自己的节奏来就好。'],'大六壬古籍重在断事，少讲化解；这里只引《周易》的通义。');
   const html=`<span class="tape"></span>
    <div class="o-head"><span class="o-title">大六壬</span><span class="badge">${esc(r.sanChuan.keTi||'')}课</span></div>
    <div class="o-meta">${di.bazi} · 月将${di.yuejiang} · ${di.xun}旬 · 空亡${kong.join('')}</div>
+   ${gradeHTML(grade,basis)}
    ${o.ask?`<div class="ask">所问：<b>${esc(o.ask)}</b></div>`:''}
-   ${plainBox(dlrPlain(r,kong))}
+   ${arrange(grade,plainBox((YS?`<p>问${q}，主要看${YS.n}。${YS.bad?(live.length?'病神出现在三传里，病象比较明显，可以多照顾自己。':hits.length?'病神入传但落空亡，症状可能没有看起来那么重。':'病神没有进入三传，从课上看病象不明显。'):(live.length?'它出现在三传里，这件事今天有动静。':hits.length?'它进了三传但落空亡，可能雷声大、雨点小。':'它没出现在三传里，这件事今天也许不会有明显进展。')}</p>`:'')+dlrPlain(r,kong)),dadv)}
    <div class="sec"><h4>四课（上为天盘神，下为干支）</h4><div class="ke">${ke}</div></div>
    <div class="sec"><h4>三传</h4><div class="chuan">${ch}</div></div>
    <div class="sec"><h4>课体 · ${esc(kt)}</h4><p>${KETI[kt]||''}${kts[1]?`三传另成「${esc(kts[1])}」格。`:''}</p></div>
@@ -677,7 +767,7 @@ function castZW(){
    <div class="sec"><h4>本命</h4><dl class="kv"><dt>命宫</dt><dd>${ming.heavenlyStem}${ming.earthlyBranch} · ${mingStars}</dd><dt>身宫</dt><dd>${body?body.name:''}</dd><dt>五行局</dt><dd>${a.fiveElementsClass}</dd><dt>命主</dt><dd>${a.soul}</dd><dt>身主</dt><dd>${a.body}</dd></dl></div>
    <div class="o-big" style="font-size:22px">流日命宫在本命${dPal.name}</div>
    <p style="font-size:13.5px;line-height:1.8;margin:0">今日（${h.daily.heavenlyStem}${h.daily.earthlyBranch}日）以本命${dPal.name}为流日命宫，这一天多与「${PALACE_DESC[dPal.name]||''}」相关。流年（${h.yearly.heavenlyStem}${h.yearly.earthlyBranch}）命宫在本命${yPal.name}。</p>
-   ${plainBox(`<p>今天的重心在「${PALACE_DESC[dPal.name]||dPal.name}」这一块。</p><p>化禄落在${findStar(h.daily.mutagen[0])}，${PALACE_DESC[findStar(h.daily.mutagen[0])]||''}方面比较顺、有机会；化权落在${findStar(h.daily.mutagen[1])}，这方面你说了算；化科落在${findStar(h.daily.mutagen[2])}，这方面容易得到认可或贵人帮忙；化忌落在${findStar(h.daily.mutagen[3])}，${PALACE_DESC[findStar(h.daily.mutagen[3])]||''}方面容易卡住，多留心、别钻牛角尖。</p>`)}
+   ${plainBox(`<p>今天的重心在「${PALACE_DESC[dPal.name]||dPal.name}」这一块。</p><p>化禄落在${findStar(h.daily.mutagen[0])}，${PALACE_DESC[findStar(h.daily.mutagen[0])]||''}方面比较顺、有机会；化权落在${findStar(h.daily.mutagen[1])}，这方面你说了算；化科落在${findStar(h.daily.mutagen[2])}，这方面容易得到认可或贵人帮忙；化忌落在${findStar(h.daily.mutagen[3])}，${PALACE_DESC[findStar(h.daily.mutagen[3])]||''}方面容易卡住，可以多留心，也不必钻牛角尖。</p>`)}
    <div class="sec"><h4>流日四化（${h.daily.heavenlyStem}干）</h4><dl class="kv">${sihua}</dl><p style="font-size:12.5px;color:var(--ink-2);margin-top:6px">${SIHUA.map(s=>s[0]+'主'+s[1]).join('；')}（通行释义）。</p></div>
    <div class="n-foot"><span>依紫微斗数安星法排盘；时辰按出生地${bc.tst?'真太阳时':'当地时间'}</span><span class="badge">紫微斗数</span></div>`;
   return {html,stamp:'紫'};
@@ -697,14 +787,36 @@ document.addEventListener('click',e=>{const t=e.target.closest('.yj [data-t]');i
 const HL_RISK=['破土','出火','纳采','问名','立券','移徙','冠笄','进人口','启钻','解除','经络','成服','除服','馀事勿取','斋醮','开光','安香','谢土','合帐','纳婿','整手足甲','归宁','订盟','定磉','平治道涂','求嗣','入殓','移柩','开生坟','合寿木','畋猎','取渔','纳畜','纳财','修造'];
 const gl=t=>HL_RISK.includes(t)&&HLG[t]?`${t}（${HLG[t][0]}）`:t;
 function hlPlain(L){const yi=L.getDayYi().map(gl),ji=L.getDayJi().map(gl),ch=(L.getDayChongDesc().match(/\)(.+)$/)||[])[1];
-  return `<p>今天是${L.getDayTianShenType()}日（值神${L.getDayTianShen()}，${L.getDayTianShenLuck()}），${ZX_PLAIN[L.getZhiXing()]||L.getZhiXing()+'日'}。</p><p>适合做：${yi.slice(0,6).join('、')}${yi.length>6?' 等':''}。<br>尽量别做：${ji.slice(0,6).join('、')}${ji.length>6?' 等':''}。</p>${ch?`<p class="sub">今天冲属${ch}的人，属${ch}的话凡事多留个心眼。喜神在${L.getDayPositionXiDesc()}，财神在${L.getDayPositionCaiDesc()}。</p>`:''}`}
-function castHL(){
-  const L=nowLunar(),ts=L.getDayTianShenType();
+  return `<p>今天是${L.getDayTianShenType()}日（值神${L.getDayTianShen()}，${L.getDayTianShenLuck()}），${ZX_PLAIN[L.getZhiXing()]||L.getZhiXing()+'日'}。</p><p>适合做：${yi.slice(0,6).join('、')}${yi.length>6?' 等':''}。<br>不太适合做：${ji.slice(0,6).join('、')}${ji.length>6?' 等':''}。</p>${ch?`<p class="sub">今天冲属${ch}，属${ch}的朋友可以多留个心。喜神在${L.getDayPositionXiDesc()}，财神在${L.getDayPositionCaiDesc()}。</p>`:''}`}
+const ZX_GOOD='除危定执成开',ZX_BAD='闭破';
+const hlScore=L=>{const a=L.getDayTianShenLuck()==='吉'?1:-1,z=L.getZhiXing(),b=ZX_GOOD.includes(z)?1:ZX_BAD.includes(z)?-2:-1,c=L.getXiuLuck()==='吉'?1:-1;return{a,b,c,sc:a+b+c}};
+const HL_ACTS={出行:['出行'],签约交易:['立券','交易','纳财'],搬家入宅:['移徙','入宅'],开业开张:['开市','挂匾','开仓'],嫁娶订婚:['嫁娶','纳采','订盟'],动工装修:['动土','修造','起基','盖屋','竖柱'],看病求医:['求医','治病','针灸'],理发:['理发'],安床:['安床'],祭祀祈福:['祭祀','祈福'],聚会会友:['会亲友'],入学拜师:['入学','习艺']};
+const hlAct=(Ld,act)=>{const ts=HL_ACTS[act];if(!ts)return null;const yi=Ld.getDayYi(),ji=Ld.getDayJi(),iy=ts.filter(t=>yi.includes(t)),ij=ts.filter(t=>ji.includes(t));
+  if(iy.length&&!ij.length)return{v:2,t:`「${iy.join('、')}」列在宜`};if(ij.length&&!iy.length)return{v:-2,t:`「${ij.join('、')}」列在忌`};if(iy.length)return{v:0,t:'宜忌里都出现'};
+  if(yi.includes('诸事不宜'))return{v:-2,t:'今日诸事不宜'};if(yi.includes('馀事勿取'))return{v:-1,t:'宜里没有，且「馀事勿取」'};return{v:0,t:'宜忌都没列'}};
+function castHL(o={}){
+  const L=nowLunar(),ts=L.getDayTianShenType(),z=L.getZhiXing(),H=hlScore(L),act=HL_ACTS[o.act]?o.act:null,A=act?hlAct(L,act):null;
+  const p=S.profile;let sx='',chong=0;if(p.birth){try{const [y,m,d]=p.birth.split('-').map(Number);sx=X.Solar.fromYmd(y,m,d).getLunar().getYearShengXiao();if(L.getDayChongShengXiao()===sx)chong=-1}catch(e){}}
+  const sc=(A?A.v*1.5+H.sc*.5:H.sc)+chong;
+  const grade=sc>=3?0:sc>=2?1:sc>=1?2:sc>-1?3:sc>-2.5?4:sc>-4?5:6;
+  const f=n=>(n>0?'+':'')+n;
+  const basis=`${act?`想做「${act}」：${A.t}（${f(A.v)}×1.5）· 日子本身（以下合计×0.5）：`:''}值神${L.getDayTianShen()}·${ts}（${f(H.a)}）· ${z}日（${f(H.b)}）· ${L.getXiu()}宿${L.getXiuLuck()}（${f(H.c)}）${sx?` · 今日冲${L.getDayChongShengXiao()}，你属${sx}（${chong?'−1':'0'}）`:''} ＝ ${f(sc)}，为${gName(grade)}。<span class="gsrc">择日以事为主：选了想做的事，它在不在宜忌里占主要份量，日子本身的吉凶减半；建除吉凶据「建满平收黑，除危定执黄；成开皆可用，闭破不相当」；${sx?'生肖按农历正月初一划分；':'在设置里填了出生日期，会再看今天冲不冲你的生肖；'}各项分值是本程序的口径。</span>`;
+  const okDay=Ld=>act?(hlAct(Ld,act).v>0&&hlScore(Ld).sc>=-1):hlScore(Ld).sc>=1;
+  let nx='';if(grade>=3){const t=new Date();for(let i=1;i<=45;i++){const d=new Date(t.getFullYear(),t.getMonth(),t.getDate()+i,12);const Ld=X.Solar.fromDate(d).getLunar();if(okDay(Ld)&&!(sx&&Ld.getDayChongShengXiao()===sx)){nx=`${d.getMonth()+1}月${d.getDate()}日</b>（周${'日一二三四五六'[d.getDay()]}，${Ld.getDayTianShenType()}·${Ld.getZhiXing()}日${act?`，宜${HL_ACTS[act].filter(x=>Ld.getDayYi().includes(x)).join('、')}`:''}）`;break}}}
+  const yi=L.getDayYi().filter(x=>x!=='无'&&x!=='诸事不宜').slice(0,4);
+  const jiL=L.getDayJi().filter(x=>x!=='无'&&x!=='诸事不宜').slice(0,4);
+  const htips=[...(act?[A.v>0?`「${act}」今天在宜里，可以安排上。`:A.v<0?`「${act}」今天不太合适，如果能挪，可以考虑${nx?`<b>${nx}`:'换个日子'}。`:`「${act}」今天宜忌都没提到，可以结合自己的安排来定${nx&&grade>=4?`；想挑个更稳的日子，可以看看<b>${nx}`:''}。`]:[]),
+    ...(chong?[`今天冲你的生肖（${sx}），重要的事可以考虑换一天，日常照常就好。`]:[]),
+    ...(!act&&yi.length?[`今天宜：${yi.map(gl).join('、')}，这些事今天做比较合适。`]:[]),
+    ...(!act&&jiL.length?[`列在「忌」里的${jiL.map(gl).join('、')}，可以考虑换个日子${nx?`，比如<b>${nx}`:''}。`]:[]),
+    ...(grade<=2?['今天日子不错，想做的事可以排上日程。']:['日常的吃饭、上班、见朋友，照常就好。'])];
+  const hadv=adviceHTML(grade,[['建滿平收黑，除危定執黃；成開皆可用，閉破不相當。','择日通行口诀，《玉匣记》等通书收录',`今天是${z}日，口诀里${ZX_GOOD.includes(z)?'属「黄」，可用':ZX_BAD.includes(z)?'属「闭破」，最不宜用':'属「黑」'}。这只是一项；某件事具体能不能做，以当天的宜忌为准（宜忌已综合了更多神煞）。`],...(grade>=4?[BUGUO]:[])],htips);
   const html=`<span class="tape"></span>
    <div class="o-head"><span class="o-title">今日黄历</span><span class="badge">${ts}日</span></div>
    <div class="o-meta">${todayStr().replace(/-/g,'.')} · ${L.getYearInGanZhi()}年 ${L.getMonthInChinese()}月${L.getDayInChinese()} · ${L.getMonthInGanZhi()}月 ${L.getDayInGanZhi()}日</div>
    <div class="o-big" style="font-size:26px">${L.getZhiXing()}日 · ${L.getDayTianShen()}${lvl(L.getDayTianShenLuck(),L.getDayTianShenLuck()==='吉'?'good':'bad')}</div>
-   ${plainBox(hlPlain(L))}
+   ${gradeHTML(grade,basis)}
+   ${arrange(grade,plainBox(hlPlain(L)),hadv)}
    <div class="sec"><h4>宜<span class="qtip">点词条看古义</span></h4><div class="yj">${L.getDayYi().map(x=>`<span data-t="${x}">${x}</span>`).join('')}</div></div>
    <div class="sec"><h4>忌</h4><div class="yj ji">${L.getDayJi().map(x=>`<span data-t="${x}">${x}</span>`).join('')}</div></div>
    <div class="sec"><dl class="kv"><dt>冲煞</dt><dd>冲${L.getDayChongDesc()} · 煞${L.getDaySha()}</dd><dt>星宿</dt><dd>${L.getXiu()}宿（${L.getXiuLuck()}）</dd><dt>喜神</dt><dd>${L.getDayPositionXiDesc()}</dd><dt>福神</dt><dd>${L.getDayPositionFuDesc()}</dd><dt>财神</dt><dd>${L.getDayPositionCaiDesc()}</dd><dt>彭祖百忌</dt><dd>${L.getPengZuGan()}　${L.getPengZuZhi()}</dd><dt>节气</dt><dd>${L.getPrevJieQi().getName()}后</dd></dl></div>
@@ -727,11 +839,11 @@ function askOracle(){
         if(b.hasAttribute('data-fill')){await closeBS();openSettings(true)}}});
     return}
   const st={how:'time',q:k==='mh'?'人事':'综合',ask:'',nums:[],slot:0,qinfo:false};const maxLen=k==='xlr'?2:3,nSlots=k==='xlr'?3:2;
-  const qs=k==='xlr'?Object.keys(XLR_Q):k==='mh'?MH_CATS:null;
+  const qs=k==='xlr'?Object.keys(XLR_Q):k==='mh'?MH_CATS:k==='dlr'?DLR_CATS:null;
   const timeNote={xlr:`以此刻起课：${L.getMonthInChinese()}月${L.getDayInChinese()}、${L.getTimeZhi()}时`,mh:`以此刻起卦：${L.getYearZhi()}年、${L.getMonthInChinese()}月${L.getDayInChinese()}、${L.getTimeZhi()}时`};
   const p=S.profile;
   const body=()=>{let h='';
-    if(qs)h+=`<div class="lab2">所问之事<span class="qtip">选中后再点一下，看是什么意思</span></div><div class="segs" data-g="q">${qs.map(x=>`<button type="button" class="chip plain" data-v="${x}" aria-pressed="${st.q===x}">${x}</button>`).join('')}</div>${st.qinfo?`<div class="qhint"><b>${st.q}</b>：${(k==='mh'&&QDESC_MH[st.q])||QDESC[st.q]||''}</div>`:''}`;
+    if(qs)h+=`<div class="lab2">所问之事<span class="qtip">选中后再点一下，看是什么意思</span></div><div class="segs" data-g="q">${qs.map(x=>`<button type="button" class="chip plain" data-v="${x}" aria-pressed="${st.q===x}">${x}</button>`).join('')}</div>${st.qinfo?`<div class="qhint"><b>${st.q}</b>：${(k==='mh'&&QDESC_MH[st.q])||(k==='dlr'&&QDESC_DLR[st.q])||QDESC[st.q]||''}</div>`:''}`;
     if(k!=='hl')h+=`<div class="lab2">写下想问的（可不填）</div><input class="tin" id="askTxt" maxlength="40" placeholder="比如：钥匙放哪了" value="${esc(st.ask)}">`;
     if(k==='xlr'||k==='mh'){h+=`<div class="lab2">起课方式</div><div class="segs" data-g="how"><button type="button" class="chip plain" data-v="time" aria-pressed="${st.how==='time'}">用此刻时间</button><button type="button" class="chip plain" data-v="num" aria-pressed="${st.how==='num'}">${k==='xlr'?'报三个数':'报数'}</button></div>`;
       h+=st.how==='time'?`<div class="note" style="margin-top:10px">${timeNote[k]}</div>`:`<div class="ntiles ${k==='mh'?'two':''}">${(k==='xlr'?[0,1,2]:[0,1]).map(i=>`<button type="button" class="ntile ${st.slot===i?'on':''}" data-slot="${i}"><b class="${st.nums[i]?'':'ph'}">${st.nums[i]||'–'}</b><small>${k==='mh'?(i===0?'上卦数':'下卦数 · 可不填'):'第'+'一二三'[i]+'个数'}</small></button>`).join('')}</div>
@@ -739,7 +851,7 @@ function askOracle(){
     if(k==='dlr'){const r=dlrAt(new Date()).r;h+=`<div class="note" style="margin-top:12px">以此刻起课：${r.dateInfo.bazi.split(' ')[2]}日 ${L.getTimeZhi()}时，月将 ${r.dateInfo.yuejiang}。</div>`}
     if(k==='bz')h+=`<div class="note" style="margin-top:12px">用设置里的个人信息：${p.birth.replace(/-/g,'.')} ${p.hour!=null?hourName(p.hour):'时辰未填'}${p.gender?' · '+p.gender:''}</div>`;
     if(k==='zw')h+=`<div class="note" style="margin-top:12px">用设置里的个人信息：${p.birth.replace(/-/g,'.')} ${hourName(p.hour)} · ${p.gender}</div>`;
-    if(k==='hl')h+=`<div class="note">今天 ${todayStr().replace(/-/g,'.')} · ${L.getMonthInChinese()}月${L.getDayInChinese()}。不用输入，直接摇签。</div>`;
+    if(k==='hl')h+=`<div class="lab2">今天想做的事（可不选）</div><div class="segs" data-g="act">${['不选',...Object.keys(HL_ACTS)].map(x=>`<button type="button" class="chip plain" data-v="${x}" aria-pressed="${(st.act||'不选')===x}">${x}</button>`).join('')}</div><div class="note" style="margin-top:10px">今天 ${todayStr().replace(/-/g,'.')} · ${L.getMonthInChinese()}月${L.getDayInChinese()}。选了想做的事，会先看它在不在今天的宜忌里；不选就看整天。${p.birth?'':'在设置里填出生日期，还会看今天冲不冲你的生肖。'}</div>`;
     return h};
   openBS(`<div class="bs-title"><h3>${M.n}</h3><span>${M.need}</span></div><div id="askBody"></div><div class="acts"><button class="btn sm" data-x>取消</button><button class="btn sm primary" data-go>摇签起课</button></div>`,c=>{
     const ab=c.querySelector('#askBody');const syncAsk=()=>{const v=c.querySelector('#askTxt');if(v)st.ask=v.value};ab.innerHTML=body();
@@ -762,7 +874,12 @@ function askOracle(){
           const nums=tiles.map((t,i)=>st.nums[i]?parseInt(st.nums[i],10):null);let bad=false;
           tiles.forEach((t,i)=>{if(i<need&&!(nums[i]>0)){t.classList.remove('shake');void t.offsetWidth;t.classList.add('shake');bad=true}});
           if(bad){toast(k==='xlr'?'三个数都要填':'至少报一个数');return}arg={...st,nums:nums.filter(x=>x!=null)}}
+        const akey=`${k}|${qs?st.q:''}|${st.act||''}|${st.ask}`,alog=ls.get(KEY+'.asks')||{},today=todayStr(),seen=alog.d===today?alog.keys||[]:[];
+        if(seen.includes(akey)&&st.warned!==akey){st.warned=akey;ab.querySelector('.repeat')?.remove();
+          const box=document.createElement('div');box.className='qhint repeat';box.innerHTML=`<b>今天已经问过${st.ask?'「'+esc(st.ask)+'」':'这件事'}了</b>${qline('初筮告，再三渎，渎则不告。','《周易》蒙卦')}<span style="font-size:12px;color:var(--ink-2)">古人认为第一次占问最有意义，反复问反而看不清。${['hl','bz','zw'].includes(k)?'这一项今天的结果是固定的，再抽也一样。':''}如果还想再看一次也可以，不妨当作参考。</span>`;
+          ab.appendChild(box);box.animate([{opacity:0,transform:'translateY(-4px)'},{opacity:1,transform:'none'}],{duration:220,easing:'ease-out'});box.scrollIntoView({block:'nearest',behavior:'smooth'});b.textContent='仍然摇签';clack(0,.06);return}
         let res;try{res={xlr:castXLR,mh:castMH,dlr:castDLR,bz:castBZ,zw:castZW,hl:castHL}[k](arg)}catch(err){console.error(err);toast('排盘出错了：'+err.message);return}
+        ls.set(KEY+'.asks',{d:today,keys:[...new Set([...seen,akey])].slice(-60)});
         await closeBS();
         const sticks=[...document.querySelectorAll('.stick')];shakeAndOpen(rnd(sticks),M.tip,res)}};
   });
@@ -978,6 +1095,7 @@ function renderSettings(){
   <div style="margin-top:8px"><button class="btn sm" data-addw>＋ 加一个天气</button></div>
   <h3>其他</h3>
   <button class="srow" data-snd>声音 <span>${S.sound?'开':'关'}</span></button>
+  <button class="srow" data-gentle>玄学签吉凶 <span>${gentleOn()?'温和显示（宜缓 / 宜慎 / 宜守）':'显示原字（小凶 / 中凶 / 大凶）'}</span></button>
   <button class="srow" data-spec>设计说明 <span>配色、动效、起课依据、字体授权 ›</span></button>`;
   const n=el.querySelector('#pName');n.oninput=()=>{S.profile.name=n.value.trim();saveS()};
 }
@@ -1002,6 +1120,7 @@ $('#settings').addEventListener('click',e=>{if(e.target.closest('.addf'))return;
   else if(b.hasAttribute('data-addw')){addForm(b.parentElement,'weather',()=>{renderSettings();renderFilters()});return}
   else if(b.hasAttribute('data-snd')){S.sound=!S.sound;$('#soundBtn').setAttribute('aria-pressed',S.sound)}
   else if(b.hasAttribute('data-spec')){openSpec();return}
+  else if(b.hasAttribute('data-gentle')){S.gentle=!gentleOn();toast(S.gentle?'偏凶的签会写作宜缓、宜慎、宜守':'将显示小凶、中凶、大凶原字')}
   else return;
   saveS();rerenderSettings();renderFilters();renderPickers();if(!busy)renderCup()});
 function openSettings(toProfile){const s=$('#settings');renderSettings();s.hidden=false;s.scrollTop=0;s.animate([{opacity:0,transform:'translateY(16px)'},{opacity:1,transform:'none'}],{duration:260,easing:'ease-out'});
@@ -1035,6 +1154,9 @@ function specHTML(){
    <li><b>紫微 · 今日</b>：按安星法排本命盘，取流日命宫所在本命宫位和流日四化。</li>
    <li><b>今日黄历</b>：宜忌、值神（黄道/黑道）、建除十二值星、二十八宿、冲煞、彭祖百忌、喜神福神财神方位。</li>
    <li>每张签都写明依据；释义里的“通行释义”是今人常用的概括，不是古籍原文。</li>
+   <li><b>七级吉凶</b>：大吉、中吉、小吉、平、小凶、中凶、大凶，每一级都由几项依据合看，卡片上逐项列出分值。小六壬：三宫读作起因、过程、结果（结果宫记两分），每宫对所问之事的吉凶取歌诀原句，再加前两宫对结果宫的五行生克（五行取道家、江氏一派）。梅花易数：体用为主，加变卦、互卦（与体同五行为「体党」）、体卦旺衰，再参入动爻爻辞的吉、凶、悔、吝、厉、无咎（原书说先天起卦「不必用《易》书之辞」，所以只占小份量）。大六壬：三传天将（末传记两分、空亡不计），加所问之事的类神是否入传、是否空亡，以及三传对日干的生克。黄历：先看想做的事在不在宜忌里，再看值神黄黑道、建除、二十八宿，填了出生日期还看是否冲你的生肖。各项吉凶取自古籍或通书，分值和分级界线是本程序的口径。八字、紫微只列关系，不分吉凶</li>
+   <li><b>可以怎么做</b>：先引古籍原句（小六壬歌诀、《梅花易数》、《周易·系辞》、择日口诀），再另列「今人建议」，两者分开标注；建议都用商量的语气，只是参考。默认温和显示，偏凶的签写作宜缓、宜慎、宜守，并把化解放在最前；设置里可切回原字。</li>
+   <li><b>一事不二占</b>：同一天同一件事再问时，引蒙卦「初筮告，再三渎，渎则不告」提醒，仍可继续。</li>
   </ul>
   <h3>开源库与数据（均可免费商用）</h3>
   <ul><li>lunar-javascript（MIT）：农历、节气、八字、黄历</li><li>iztro（MIT，内含 lunar-typescript、lunar-lite、i18next、dayjs，均为 MIT）：紫微斗数排盘</li><li>liuren-ts-lib（Apache-2.0，内含 tyme4ts，MIT）：大六壬排盘</li><li>《周易》卦爻辞取自 @freizl/yijing（MIT），已与另外两个独立版本逐条校勘并改正 7 处错误；《梅花易数》原文取自 opencode-tianji 数据（MIT），已与劝学网全文逐字核对</li><li>小六壬歌诀按四个通行本互校，取多数本用字，分歧处注明异文</li></ul>
