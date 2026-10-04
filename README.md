@@ -41,13 +41,19 @@ npm run build
 
 ## 第三方授权
 
+全部可以免费商用。
+
 | 名称 | 用途 | 授权 |
 |---|---|---|
 | lunar-javascript | 农历、节气、八字、黄历 | MIT |
-| iztro | 紫微斗数排盘 | MIT |
-| liuren-ts-lib（依赖 tyme4ts） | 大六壬排盘 | Apache-2.0（tyme4ts 为 MIT） |
-| @freizl/yijing | 《周易》卦爻辞文本 | MIT |
+| iztro（内含 lunar-typescript、lunar-lite、i18next、dayjs） | 紫微斗数排盘 | 均为 MIT |
+| liuren-ts-lib（内含 tyme4ts） | 大六壬排盘 | Apache-2.0（tyme4ts 为 MIT） |
+| @freizl/yijing | 《周易》卦爻辞文本（已校勘修正） | MIT |
 | opencode-tianji 数据 | 《梅花易数》原文条目 | MIT |
 | 站酷小薇、思源宋体、思源黑体、龙藏体、Instrument Serif | 字体（Google Fonts 在线加载） | SIL OFL 1.1 |
 
-小六壬歌诀取民间通行本，各本字句略有出入。
+MIT 和 Apache-2.0 都允许商用、修改、闭源发布，条件是保留原作者的版权和授权声明，所以授权全文都放在 `THIRD_PARTY_LICENSES.md`，上线小程序或 App 时把它一起带上，或者做进「关于」页。古籍原文属于公有领域。
+
+## 内容校验
+
+古籍文本和排盘算法的交叉验证过程和结果见 `VERIFICATION.md`。

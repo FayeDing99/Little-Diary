@@ -232,13 +232,67 @@ function datePicker({title,value,max,min='1920-01-01',quick=true,startYears=fals
 const HOURS=[['早子','00–01'],['丑','01–03'],['寅','03–05'],['卯','05–07'],['辰','07–09'],['巳','09–11'],['午','11–13'],['未','13–15'],['申','15–17'],['酉','17–19'],['戌','19–21'],['亥','21–23'],['晚子','23–24']];
 const HOUR_H=[0,2,4,6,8,10,12,14,16,18,20,22,23];
 const hourName=i=>i==null?'不清楚':HOURS[i][0]+(HOURS[i][0].length===1?'时':'时');
+const CITIES=[['中国大陆',[['北京',116.40],['上海',121.47],['天津',117.20],['重庆',106.55],['广州',113.26],['深圳',114.06],['杭州',120.16],['南京',118.80],['苏州',120.58],['成都',104.07],['武汉',114.31],['西安',108.94],['长沙',112.94],['郑州',113.62],['济南',117.00],['青岛',120.38],['沈阳',123.43],['大连',121.61],['长春',125.32],['哈尔滨',126.64],['石家庄',114.51],['太原',112.55],['呼和浩特',111.75],['合肥',117.23],['福州',119.30],['厦门',118.09],['南昌',115.86],['南宁',108.37],['海口',110.20],['昆明',102.83],['贵阳',106.63],['兰州',103.83],['西宁',101.78],['银川',106.23],['乌鲁木齐',87.62],['拉萨',91.13]].map(([n,l])=>[n,l,'Asia/Shanghai'])],
+ ['港澳台',[['香港',114.17,'Asia/Hong_Kong'],['澳门',113.54,'Asia/Macau'],['台北',121.56,'Asia/Taipei'],['高雄',120.30,'Asia/Taipei']]],
+ ['海外',[['纽约',-74.01,'America/New_York'],['华盛顿',-77.04,'America/New_York'],['波士顿',-71.06,'America/New_York'],['费城',-75.17,'America/New_York'],['芝加哥',-87.63,'America/Chicago'],['休斯敦',-95.37,'America/Chicago'],['丹佛',-104.99,'America/Denver'],['洛杉矶',-118.24,'America/Los_Angeles'],['旧金山',-122.42,'America/Los_Angeles'],['西雅图',-122.33,'America/Los_Angeles'],['多伦多',-79.38,'America/Toronto'],['温哥华',-123.12,'America/Vancouver'],['伦敦',-0.13,'Europe/London'],['巴黎',2.35,'Europe/Paris'],['柏林',13.40,'Europe/Berlin'],['东京',139.69,'Asia/Tokyo'],['首尔',126.98,'Asia/Seoul'],['新加坡',103.82,'Asia/Singapore'],['吉隆坡',101.69,'Asia/Kuala_Lumpur'],['曼谷',100.50,'Asia/Bangkok'],['悉尼',151.21,'Australia/Sydney'],['墨尔本',144.96,'Australia/Melbourne'],['奥克兰',174.76,'Pacific/Auckland']]]];
+function tzOffsetMin(tz,utcMs){const f=new Intl.DateTimeFormat('en-US',{timeZone:tz,hourCycle:'h23',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const p=Object.fromEntries(f.formatToParts(new Date(utcMs)).map(x=>[x.type,x.value]));return(Date.UTC(+p.year,+p.month-1,+p.day,+p.hour%24,+p.minute,+p.second)-utcMs)/60000}
+function utcFromLocal(y,m,d,H,M,place){const g=Date.UTC(y,m-1,d,H,M);if(place&&place.off!=null)return g-place.off*3600000;const tz=place&&place.tz||'Asia/Shanghai';
+  const o1=tzOffsetMin(tz,g);let u=g-o1*60000;const o2=tzOffsetMin(tz,u);if(o2!==o1)u=g-o2*60000;return u}
+function eotMin(utc){const d=new Date(utc),N=Math.floor((utc-Date.UTC(d.getUTCFullYear(),0,0))/864e5),B=2*Math.PI*(N-81)/365;return 9.87*Math.sin(2*B)-7.53*Math.cos(B)-1.5*Math.sin(B)}
+const comps=ms=>{const d=new Date(ms);return{y:d.getUTCFullYear(),m:d.getUTCMonth()+1,d:d.getUTCDate(),H:d.getUTCHours(),M:d.getUTCMinutes()}};
+const hhmm=c=>pad(c.H)+':'+pad(c.M);
+const idxOfHour=H=>H===23?12:Math.floor((H+1)/2);
+/* 出生时刻换算：北京时间（定节气、年月柱）与出生地时间（定日、时） */
+function birthCalc(){const p=S.profile;const [y,m,d]=p.birth.split('-').map(Number);
+  let H,M,exact=false;if(p.time){[H,M]=p.time.split(':').map(Number);exact=true}else if(p.hour!=null){H=HOUR_H[p.hour];M=30}else{H=12;M=0}
+  const utc=utcFromLocal(y,m,d,H,M,p.place);const bj=comps(utc+8*3600000);
+  let loc={y,m,d,H,M},tst=false;
+  if(exact&&p.place&&p.tst!==false){loc=comps(utc+p.place.lon*240000+eotMin(utc)*60000);tst=true}
+  const hourIdx=exact?idxOfHour(loc.H):p.hour;
+  const placeTxt=p.place?p.place.n:'未填（按北京时间）';
+  const note=`出生地：${placeTxt}${p.place?`，钟表时间 ${pad(H)}:${pad(M)}${exact?'':'（按时辰中点估算）'}`:''}${tst?`，真太阳时 ${hhmm(loc)}`:''}`;
+  return{bj,loc,hourIdx,known:exact||p.hour!=null,exact,tst,note}}
 function hourPicker(onPick){
-  const cur=S.profile.hour;
-  openBS(`<div class="bs-title"><h3>出生时辰</h3><span>按出生地钟表时间选</span></div>
-    <div class="hours">${HOURS.map((h,i)=>`<button type="button" data-h="${i}" aria-pressed="${cur===i}">${h[0]}${h[0].length===1?'时':''}<small>${h[1]}</small></button>`).join('')}<button type="button" data-h="" aria-pressed="${cur==null}">不清楚<small>先空着</small></button></div>`,
-    c=>{c.onclick=e=>{const b=e.target.closest('[data-h]');if(!b)return;const v=b.dataset.h===''?null:+b.dataset.h;clack(0,.1);setTimeout(()=>{closeBS();onPick(v)},120)}});
+  const cur=S.profile.hour;let mode=S.profile.time?'exact':'hour';const t=(S.profile.time||'').split(':');let nums=[t[0]||'',t[1]||''],slot=0;
+  const body=()=>mode==='hour'?`<div class="hours">${HOURS.map((h,i)=>`<button type="button" data-h="${i}" aria-pressed="${!S.profile.time&&cur===i}">${h[0]}${h[0].length===1?'时':''}<small>${h[1]}</small></button>`).join('')}<button type="button" data-h="" aria-pressed="${cur==null&&!S.profile.time}">不清楚<small>先空着</small></button></div>`
+    :`<div class="ntiles two">${[0,1].map(i=>`<button type="button" class="ntile ${slot===i?'on':''}" data-slot="${i}"><b class="${nums[i]?'':'ph'}">${nums[i]||'–'}</b><small>${i?'分':'时（0–23）'}</small></button>`).join('')}</div>
+      <div class="keypad">${[1,2,3,4,5,6,7,8,9].map(n=>`<button type="button" data-key="${n}">${n}</button>`).join('')}<button type="button" class="fn" data-key="c">清空</button><button type="button" data-key="0">0</button><button type="button" class="fn" data-key="b">⌫</button></div>
+      <div class="acts"><button type="button" class="btn sm primary" data-ok>确定</button></div>`;
+  openBS(`<div class="bs-title"><h3>出生时间</h3><span>按出生地当时的钟表时间</span></div>
+    <div class="segs" style="margin-bottom:12px"><button type="button" class="chip plain" data-mode="hour" aria-pressed="${mode==='hour'}">只知道时辰</button><button type="button" class="chip plain" data-mode="exact" aria-pressed="${mode==='exact'}">精确到分钟</button></div><div id="hpBody"></div>
+    <p class="ask">精确时间才能做真太阳时校正；只知道时辰时，按时辰中点估算。</p>`,
+    c=>{const hb=c.querySelector('#hpBody');const re=()=>{hb.innerHTML=body()};re();
+      c.onclick=e=>{const b=e.target.closest('button');if(!b)return;
+        if(b.dataset.mode){mode=b.dataset.mode;c.querySelectorAll('[data-mode]').forEach(x=>x.setAttribute('aria-pressed',x.dataset.mode===mode));re();return}
+        if(b.dataset.h!=null){const v=b.dataset.h===''?null:+b.dataset.h;clack(0,.1);setTimeout(()=>{closeBS();onPick({hour:v,time:null})},120);return}
+        if(b.dataset.slot!=null){slot=+b.dataset.slot;re();return}
+        if(b.dataset.key!=null){const k=b.dataset.key,cur2=nums[slot];buzz(5);clack(0,.05);
+          if(k==='b')nums[slot]=cur2.slice(0,-1);else if(k==='c'){nums=['',''];slot=0}else if(cur2.length<2){nums[slot]=cur2+k;if(nums[slot].length===2&&slot===0)slot=1}
+          re();return}
+        if(b.hasAttribute('data-ok')){const H=+nums[0],M=+(nums[1]||0);if(nums[0]===''||H>23||M>59){toast('时 0–23，分 0–59');return}
+          closeBS();onPick({hour:idxOfHour(H),time:pad(H)+':'+pad(M)})}}});
 }
 
+function placePicker(onPick){
+  let other=false;
+  const body=()=>other?`<div class="lab2">经度（东经为正，西经为负）</div><input class="tin" id="plLon" inputmode="decimal" placeholder="例如 -77.04">
+      <div class="lab2">出生时当地与 UTC 的时差（小时）</div><input class="tin" id="plOff" inputmode="decimal" placeholder="例如 -5（夏令时请自行加 1）">
+      <div class="lab2">地名（可不填）</div><input class="tin" id="plName" maxlength="12" placeholder="例如 某某镇">
+      <div class="acts"><button type="button" class="btn sm" data-back>返回城市列表</button><button type="button" class="btn sm primary" data-ok>确定</button></div>`
+    :CITIES.map(([g,list])=>`<div class="lab2">${g}</div><div class="segs">${list.map(([n,l,tz])=>`<button type="button" class="chip plain" data-city="${n}" data-lon="${l}" data-tz="${tz}" aria-pressed="${S.profile.place&&S.profile.place.n===n}">${n}</button>`).join('')}</div>`).join('')+
+      `<div class="acts"><button type="button" class="btn sm" data-clear>清除出生地</button><button type="button" class="btn sm" data-other>其他地点</button></div>`;
+  openBS(`<div class="bs-title"><h3>出生地</h3><span>选最近的城市即可</span></div><div id="plBody"></div><p class="ask">列表里的城市按当地历史时区（含夏令时）自动换算。</p>`,c=>{
+    const pb=c.querySelector('#plBody');const re=()=>{pb.innerHTML=body()};re();
+    c.onclick=e=>{const b=e.target.closest('button');if(!b)return;
+      if(b.dataset.city){clack(0,.08);const v={n:b.dataset.city,lon:+b.dataset.lon,tz:b.dataset.tz};setTimeout(()=>{closeBS();onPick(v)},120);return}
+      if(b.hasAttribute('data-other')){other=true;re();return}
+      if(b.hasAttribute('data-back')){other=false;re();return}
+      if(b.hasAttribute('data-clear')){closeBS();onPick(null);return}
+      if(b.hasAttribute('data-ok')){const lon=parseFloat(c.querySelector('#plLon').value),off=parseFloat(c.querySelector('#plOff').value);
+        if(!(lon>=-180&&lon<=180)||!(off>=-12&&off<=14)){toast('经度 -180~180，时差 -12~14');return}
+        closeBS();onPick({n:c.querySelector('#plName').value.trim()||`经度${lon}`,lon,off})}}});
+}
 /* ---------- custom add form ---------- */
 function addForm(host,kind,onDone){
   host.querySelector('.addf')?.remove();
@@ -415,13 +469,14 @@ const lvl=(t,k)=>`<span class="lvl ${k}">${t}</span>`;
 /* ---- 大白话 ---- */
 const plainBox=t=>`<div class="plain">${t}</div>`;
 const XLR_PLAIN=[
- {综合:'大安是六宫里最稳的一宫，事事顺当。适合按原计划、稳稳当当地办，最后一句提醒细节还要再仔细想想。',失物:'东西没丢远，多半就在附近。',行人:'等的人还没动身。',求财:'想谋的事，往东边去求。',疾病:'病情不碍事。',官事:'歌诀没专门讲官事；大安主平稳，可以按平稳来看。',家宅:'家里平安。'},
- {综合:'事情拖拖拉拉、一时难成，眼下还看不清楚。要防口舌是非，人际上平平。',失物:'往南边找能找到；要追讨的东西，抓紧去讨才能如愿。',行人:'出门的人已经在回来的路上。',求财:'所谋之事还不明朗，一时难成。',疾病:'歌诀没专门讲疾病；留连主拖延，事情容易反复。',官事:'公事官司只宜放慢，别急。',家宅:'歌诀没专门讲家宅；人事平平。'},
+ {综合:'大安是六宫里最稳的一宫，事事顺当。「将军回田野」是收兵归田之象，宜守成、按原计划稳稳地办，不宜冒进；最后一句提醒细节还要再仔细推敲。',失物:'东西没丢远，多半就在附近。',行人:'等的人还没动身。',求财:'想谋的事，往东边去求。',疾病:'病情不碍事。',官事:'歌诀没专门讲官事；大安主平稳，可以按平稳来看。',家宅:'家里平安。'},
+ {综合:'事情拖拖拉拉、一时难成，眼下还看不清楚。要防口舌是非，人际上平平。',失物:'往南边找能找到；要追讨的东西，抓紧去讨才能如愿。',行人:'出门的人还没踏上归程。',求财:'所谋之事还不明朗，一时难成。',疾病:'歌诀没专门讲疾病；留连主拖延，事情容易反复。',官事:'公事官司只宜放慢，别急。',家宅:'歌诀没专门讲家宅；人事平平。'},
  {综合:'喜事很快就到，事情进展快、顺利。',失物:'往申、未、午方（大致西南到正南）找，可以在路上问问人。',行人:'出门的人有消息了。',求财:'求财往南边去。',疾病:'病人没有大碍。',官事:'官事有福气照应。',家宅:'家宅、家畜都吉。'},
- {综合:'主口舌争执，要特别防官非和是非，家里也容易出些怪事，凡事小心说话。',失物:'赶紧去找，晚了更难找。',行人:'出门的人路上会受些惊吓。',求财:'歌诀没专门讲求财；赤口主口舌是非。',疾病:'原句是「病者出西方」，并提醒防染时疫。',官事:'官非一定要防。',家宅:'家里鸡犬作怪，不太安宁。'},
+ {综合:'主口舌争执，要特别防官非和是非，家里也容易出些怪事，凡事小心说话。',失物:'赶紧去讨、去找，拖久了更难找回。',行人:'出门的人路上会受些惊吓。',求财:'歌诀没专门讲求财；赤口主口舌是非。',疾病:'原句是「病者出西方」，并提醒防染时疫。',官事:'官非一定要防。',家宅:'家里鸡犬（一作六畜）作怪，不太安宁。'},
  {综合:'很吉利，事情好商量，会有女性来报喜，凡事和和气气就能成。',失物:'往西南（坤方）找。',行人:'出门的人马上就到。',求财:'交易买卖很顺。',疾病:'原句是「病者祈上苍」，病人宜祈福求安。',官事:'歌诀没专门讲官事；小吉主凡事和合。',家宅:'歌诀没专门讲家宅；小吉主凡事和合。'},
- {综合:'不吉，事情容易落空；和女性相关的事多别扭不顺。',失物:'东西不容易找回来。',行人:'出门的人路上可能有灾。',求财:'求财没有收益。',疾病:'病人像遇到暗中作祟，化解之后可以安康。',官事:'官事有刑伤。',家宅:'歌诀没专门讲家宅；空亡主落空不祥。'}];
-const GUA_PLAIN={乾:'刚健，自强不息',坤:'柔顺，厚德承载',屯:'万事开头难，刚起步多艰难',蒙:'蒙昧待启，需要请教与学习',需:'等待时机，不宜冒进',讼:'争执诉讼，宜和解不宜争到底',师:'兴众用兵，讲纪律、靠众人',比:'亲近依附，彼此相助',小畜:'小有积蓄，力量还不够大',履:'小心行事，如履虎尾',泰:'通泰顺畅，上下相通',否:'闭塞不通，宜守不宜进',同人:'与人同心，合作共事',大有:'丰收富有，所得甚多',谦:'谦逊退让，反而受益',豫:'安乐愉悦，事先有准备',随:'随顺时势，跟随他人',蛊:'积弊需整治，拨乱反正',临:'临近与监临，好事将至',观:'观察审视，先看清再说',噬嗑:'咬合除障，明断是非',贲:'文饰装点，重外表也要重内在',剥:'剥落衰退，宜静守',复:'回复归来，重新开始',无妄:'不妄为，顺其自然',大畜:'大有积蓄，厚积薄发',颐:'颐养，注意口舌饮食与修养',大过:'过度失衡，负担太重',坎:'重重险阻，守信可过',离:'附丽光明，依附正道',咸:'感应相通，彼此有感',恒:'持久不变，贵在坚持',遯:'退避隐让，以退为进',大壮:'强盛之时，忌用强过头',晋:'上进晋升，光明在前',明夷:'光明受伤，宜韬光养晦',家人:'家道，各守其位',睽:'乖离不合，求同存异',蹇:'行路艰难，宜止步求助',解:'困难缓解，宜速了结',损:'减损，舍小得大',益:'增益，助人亦助己',夬:'决断，果断除去阻碍',姤:'不期而遇，相遇之时',萃:'聚集，人与物汇聚',升:'逐步上升，稳中求进',困:'困穷受限，守正待时',井:'井养不穷，持续供给',革:'变革，去旧换新',鼎:'鼎新，确立新局',震:'震动惊惧，警醒反省',艮:'止，适可而止',渐:'循序渐进，不可急',归妹:'婚嫁之象，名分要正',丰:'丰盛到顶，盛极要防衰',旅:'羁旅在外，处处谨慎',巽:'顺而能入，柔和渗透',兑:'喜悦，和颜沟通',涣:'涣散，需要重新凝聚',节:'节制，有度而止',中孚:'诚信在心，以诚动人',小过:'小有过越，宜小事不宜大事',既济:'事已办成，守成防乱',未济:'事未完成，仍需努力'};
+ {综合:'不吉，事情容易落空；和女性相关的事多别扭不顺。',失物:'东西不容易找回来。',行人:'出门的人路上可能有灾。',求财:'求财没有收益。',疾病:'病人像遇到暗中作祟，经过禳解可以安康。',官事:'官事有刑伤。',家宅:'歌诀没专门讲家宅；空亡主落空不祥。'}];
+const GUA_PLAIN={"乾":["杂卦","乾刚","刚健有力"],"坤":["杂卦","坤柔","柔顺承载"],"屯":["序卦","屯者，物之始生也","万物初生，起步艰难"],"蒙":["序卦","蒙者，蒙也，物之稺也","尚在蒙昧，需要启蒙、学习"],"需":["杂卦","需，不进也","等待时机，暂不前进"],"讼":["杂卦","讼，不亲也","争执不和"],"师":["序卦","师者，众也","兴众用兵，靠众人和纪律"],"比":["序卦","比者，比也","亲近相辅"],"小畜":["杂卦","小畜，寡也","积蓄还少"],"履":["杂卦","履，不处也","一步步践行，不停留，也要小心"],"泰":["序卦","泰者，通也","通泰顺畅"],"否":["杂卦","否泰，反其类也","闭塞不通，与泰相反"],"同人":["杂卦","同人，亲也","与人同心亲近"],"大有":["杂卦","大有，众也","所有丰盛"],"谦":["杂卦","谦轻","自处谦下"],"豫":["杂卦","豫怠也","安乐，也要防松懈"],"随":["杂卦","随，无故也","随从、顺应，不拘守旧故"],"蛊":["序卦","蛊者，事也","有事待整治"],"临":["序卦","临者，大也","居上临下、亲临其事"],"观":["杂卦","临观之义，或与或求","观察，也被人观看"],"噬嗑":["序卦","嗑者，合也","咬合，除去中间的阻隔"],"贲":["序卦","贲者，饰也","文饰装点"],"剥":["序卦","剥者，剥也","剥落衰败"],"复":["杂卦","复，反也","回返、重新开始"],"无妄":["杂卦","无妄，灾也","不妄为，防意外之灾"],"大畜":["杂卦","大畜，时也","大有积蓄，待时而用"],"颐":["杂卦","颐，养正也","颐养，养之以正"],"大过":["杂卦","大过，颠也","过度失衡"],"坎":["序卦","坎者，陷也","陷入险境"],"离":["序卦","离者，丽也","附着、依附"],"咸":["杂卦","咸，速也","彼此感应，来得快"],"恒":["序卦","恒者，久也","恒久"],"遯":["序卦","遯者，退也","退避"],"大壮":["杂卦","大壮则止","强盛之时宜知止"],"晋":["序卦","晋者，进也","上进"],"明夷":["序卦","夷者，伤也","光明受伤"],"家人":["杂卦","家人，内也","家内之道"],"睽":["序卦","睽者，乖也","乖离不合"],"蹇":["序卦","蹇者，难也","行路艰难"],"解":["序卦","解者，缓也","困难缓解"],"损":["杂卦","损益，盛衰之始也","减损"],"益":["杂卦","损益，盛衰之始也","增益"],"夬":["序卦","夬者，决也","决断"],"姤":["序卦","姤者，遇也","相遇"],"萃":["序卦","萃者，聚也","聚集"],"升":["序卦","聚而上者谓之升","逐步上升"],"困":["序卦","升而不已必困","困穷受限"],"井":["杂卦","井通","通达，养人不穷"],"革":["杂卦","革，去故也","去旧"],"鼎":["杂卦","鼎，取新也","取新"],"震":["序卦","震者，动也","震动"],"艮":["序卦","艮者，止也","止"],"渐":["序卦","渐者，进也","循序渐进"],"归妹":["杂卦","归妹，女之终也","女子出嫁之象"],"丰":["序卦","丰者，大也","盛大"],"旅":["杂卦","亲寡，旅也","在外漂泊，亲人少"],"巽":["序卦","巽者，入也","顺而能入"],"兑":["序卦","兑者，说也","喜悦"],"涣":["序卦","涣者，离也","离散"],"节":["杂卦","节，止也","节制"],"中孚":["杂卦","中孚，信也","诚信"],"小过":["杂卦","小过，过也","稍有过越"],"既济":["杂卦","既济，定也","事已定"],"未济":["序卦","物不可穷也","事未完成，还在路上"]};
+const gp=n=>{const g=GUA_PLAIN[n];return g?`${g[2]}（《${g[0]}》：“${g[1]}”）`:""};
 const TI_PLAIN={旺:'体卦在这个季节当令而旺，你这边底气足。',衰:'体卦在这个季节失令而衰，你这边力量偏弱，要多给自己留余地。',不旺不衰:'体卦在这个季节不旺不衰，底气一般。'};
 const REL_PLAIN={体克用:'体克用：你能压得住所问之事，书上算吉。',用克体:'用克体：所问之事反过来压着你，书上算凶。',体生用:'体生用：你在往外付出、消耗，书上说有耗失之患。',用生体:'用生体：所问之事在帮你、给你助力，书上说有进益之喜。',体用比和:'体用比和：你和所问之事五行相同，书上说百事顺遂。'};
 const LQ_PLAIN={官鬼:'压力、官事、病痛这类事',父母:'文书、长辈、房屋这类事',妻财:'钱财、收入这类事',子孙:'喜事、晚辈、化解烦忧这类事',兄弟:'同辈、竞争、花钱这类事'};
@@ -431,12 +486,12 @@ const ZX_PLAIN={建:'建日，适合开始新事情、出行',除:'除日，适�
 
 /* ---- 小六壬 ---- */
 const XLR=[
- {n:'大安',j:'吉',v:'大安事事昌，求谋在东方，失物去不远。宅舍保平安，行人身未动，病者主无妨，将军回田野，仔细更推详。'},
- {n:'留连',j:'凶',v:'留连事难成，求谋日未明，官事只宜缓。去者来回程，失物南方见，急讨方遂心。更需防口舌，人事且平平。'},
- {n:'速喜',j:'吉',v:'速喜喜来临，求财向南行，失物申未午，逢人路上寻。官事有福德，病者无祸侵，田宅六畜吉，行人有音信。'},
- {n:'赤口',j:'凶',v:'赤口主口舌，官非切要防，失物急去寻，行人有惊慌。鸡犬多作怪，病者出西方，更须防咀咒，恐怕染瘟殃。'},
- {n:'小吉',j:'吉',v:'小吉最吉昌，路上好商量，阴人来报喜。失物在坤方，行人立便至，交易甚是强，凡事皆和合，病者祈上苍。'},
- {n:'空亡',j:'凶',v:'空亡事不祥，阴人多乖张，求财无利益。行人有灾殃，失物寻不见，官事有刑伤，病人逢暗鬼，析解可安康。'}];
+ {n:'大安',j:'吉',v:'大安事事昌，求谋在东方，失物去不远。宅舍保安康，行人身未动，病者主无妨，将军回田野，仔细更推详。',alt:'「求谋在东方」一作「求财在坤方」。'},
+ {n:'留连',j:'凶',v:'留连事难成，求谋日未明，官事只宜缓。去者未回程，失物南方见，急讨方称心。更须防口舌，人事且平平。',alt:'「只宜缓」一作「凡宜缓」；「急讨方称心」一作「急讨方遂心」「急讨方心称」；「人事」一作「人口」。'},
+ {n:'速喜',j:'吉',v:'速喜喜来临，求财向南行，失物申未午，逢人路上寻。官事有福德，病者无祸侵，田宅六畜吉，行人有音信。',alt:'「音信」一作「信音」。'},
+ {n:'赤口',j:'凶',v:'赤口主口舌，官非切宜防，失物速速讨，行人有惊慌。鸡犬多作怪，病者出西方，更须防咒诅，恐怕染瘟殃。',alt:'「切宜防」一作「切要防」；「失物速速讨」一作「失物急去寻」；「鸡犬」一作「六畜」；「恐怕」一作「诚恐」。'},
+ {n:'小吉',j:'吉',v:'小吉最吉昌，路上好商量，阴人来报喜。失物在坤方，行人立便至，交易甚是强，凡事皆和合，病者祈上苍。',alt:'「交易」一作「交关」；「祈上苍」一作「叩穹苍」。'},
+ {n:'空亡',j:'凶',v:'空亡事不祥，阴人多乖张，求财无利益。行人有灾殃，失物寻不见，官事有刑伤，病人逢暗鬼，解禳保安康。',alt:'「解禳保安康」一作「析解可安康」。'}];
 const QDESC={综合:'不限定哪一类事，看这件事整体顺不顺。',失物:'东西丢了，问能不能找回、往哪个方向找。',行人:'在等的人、出门在外的人，什么时候回来或到达。',求财:'想赚钱、谈生意、谋一件事，能不能如愿。',疾病:'自己或家人身体不舒服，问病情轻重。',官事:'官司、公事，和单位、机构打交道的事。',家宅:'家里、住处安不安宁。',
   人事:'日常人际和办事，拿不准归哪类时就选它。',求谋:'谋划一件事，问能不能成、成得快慢。',求名:'考试、升职、评选、名声。',交易:'买卖、签约、谈价钱。',出行:'要出门、旅行，问路上顺不顺。',谒见:'去见某个人，问见不见得到、有没有收获。',婚姻:'恋爱、婚事能不能成。',天时:'问天气，看晴还是雨。',饮食:'饭局、吃喝能不能成、丰不丰盛。'};
 const QDESC_MH={求财:'求财、赚钱，问有没有财、会不会损耗。',行人:'等的人、出门在外的人什么时候回来。',失物:'东西丢了，问能不能找回。',家宅:'家里安不安稳，有进益还是有破耗。',疾病:'身体不舒服，问病情走向、好不好治。'};
@@ -460,8 +515,9 @@ function castXLR(o){
    ${plainBox(xlrPlain(steps[2][1],o.q))}
    <div class="verse">${verse}</div>
    ${re?`<div class="ask">已标出与「${o.q}」相关的句子。</div>`:''}
+   <div class="ask">异文：${g.alt}</div>
    <div class="sec"><h4>起课规则</h4><p>${o.how==='num'?'从大安起数第一个数，落宫处起数第二个数，再起数第三个数，顺数六宫（大安、留连、速喜、赤口、小吉、空亡）。':'正月起大安，月上起日，日上起时，顺数六宫（大安、留连、速喜、赤口、小吉、空亡）。'}末宫即所得。</p></div>
-   <div class="n-foot"><span>歌诀为民间通行本，各本字句略有出入</span><span class="badge">小六壬</span></div>`;
+   <div class="n-foot"><span>歌诀按多个通行本互校，取多数本用字</span><span class="badge">小六壬</span></div>`;
   return {html,stamp:'壬'};
 }
 
@@ -474,6 +530,24 @@ const byBits=b=>Object.keys(TRI).find(k=>TRI[k]===b);
 const guaName=bits=>{const lo=byBits(bits.slice(0,3)),hi=byBits(bits.slice(3));const nm=D.GUA[bits][0];return lo===hi?`${hi}为${TRI_X[hi]}`:`${TRI_X[hi]}${TRI_X[lo]}${nm}`};
 const stripName=t=>t.replace(/^[^：]{1,3}：/,'');
 const hexHTML=(bits,mv)=>`<div class="hex">${bits.split('').reverse().map((b,i)=>`<i class="${b==='1'?'y':''}${6-i===mv?' mv':''}"></i>`).join('')}</div>`;
+
+const CAT_PLAIN={人事:['事情由你掌控，吉','对方或事情压着你，不宜','你要付出，有耗损','有进益','谋事顺利'],
+ 求谋:['能成，但成得慢','谋不成，还可能有害','谋得多、成得少','不用多谋就能成','求谋称意'],
+ 求财:['有财','没有财','有损耗之忧','有进益之喜','财利顺心'],
+ 求名:['名可成，但成得慢','名不可成','名难成，或因名有损','名易成，或因名有得','功名称意'],
+ 交易:['有财','不成','难成，或因交易有失','马上能成，成了有财','容易成'],
+ 出行:['可以去，到了多得意','出门有祸','出行有破耗','有意外之财','出行顺快'],
+ 行人:['人会回来，但要晚些','人不回来','人还没回来','人马上就回来','归期就在这几天'],
+ 谒见:['见得到','见不到','难见，见了也没益处','见得到，见了还有收获','欢欢喜喜见面'],
+ 失物:['能找到，但要晚些','找不回来','很难找到','容易找到','东西没丢'],
+ 婚姻:['能成，但成得晚','不可成，成了也有害','难成，或因婚事有失','容易成，或因婚事有得','婚姻吉利'],
+ 家宅:['家宅多吉','家宅多凶','多耗散，要防失盗','多进益，或有人馈赠','家宅安稳'],
+ 疾病:['病容易好，不用药也会好转','用药也难见效','病拖拖拉拉难好','很快就好','病容易好转'],
+ 饮食:['饮食有阻','吃不上','饭局难成','饮食丰盛','饮食丰足']};
+const REL_IDX={体克用:0,用克体:1,体生用:2,用生体:3,体用比和:4};
+const relTo=(ti,x)=>{const a=TRI_WX[ti],b=TRI_WX[x];return a===b?'比和':KE[a]===b?'体克':KE[b]===a?'克体':SHENG[a]===b?'体生':'生体'};
+const REL2={比和:['与体比和','好'],体克:['被体所克','好'],克体:['克体','不好'],体生:['耗体（体去生它）','有耗'],生体:['生体','好']};
+const TIANSHI=[['离','离多主晴'],['坎','坎多主雨'],['坤','坤乃阴晦'],['乾','乾主晴明'],['震','震多则春夏雷轰'],['巽','巽多则四时风烈'],['艮','艮多则久雨必晴'],['兑','兑多则不雨亦阴']];
 const MH_CATS=['人事','求谋','求财','求名','交易','出行','行人','谒见','失物','婚姻','家宅','疾病','天时','饮食'];
 function castMH(o){
   const L=nowLunar(),hz=ZHI.indexOf(L.getTimeZhi())+1;let up,low,mv,how;
@@ -491,6 +565,14 @@ function castMH(o){
   const WANG={春:['震','巽'],夏:['离'],秋:['乾','兑'],冬:['坎'],四季月:['坤','艮']},SHUAI={春:['坤','艮'],夏:['乾','兑'],秋:['震','巽'],冬:['离'],四季月:['坎']};
   const tiState=WANG[season].includes(ti)?'旺':SHUAI[season].includes(ti)?'衰':'不旺不衰';
   const G=D.GUA[bits],GB=D.GUA[bian],cat=D.MHCAT[o.q]||D.MHCAT['人事'];
+  const huLo=byBits(hu.slice(0,3)),huUp=byBits(hu.slice(3)),bianYong=mv<=3?byBits(bian.slice(0,3)):byBits(bian.slice(3));
+  const rH=[huLo,huUp].map(x=>[x,relTo(ti,x)]),rB=relTo(ti,bianYong);
+  const isTS=o.q==='天时';
+  const yongGood=relK!=='bad'&&relK!=='mid',bianGood=REL2[rB][1]==='好';
+  const trend=yongGood&&!bianGood?'先吉后凶':!yongGood&&bianGood?'先凶后吉':yongGood?'始终偏吉':'始终偏不利';
+  const allTri=[U,Lo,huLo,huUp,byBits(bian.slice(0,3)),byBits(bian.slice(3))];const cnt={};allTri.forEach(t=>cnt[t]=(cnt[t]||0)+1);
+  let tsTxt='';if(isTS){const lines=TIANSHI.filter(([t])=>cnt[t]).sort((a,b)=>cnt[b[0]]-cnt[a[0]]);
+    tsTxt=`<p>占天时不看体用，看本卦、互卦、变卦六个经卦里各卦出现的多少：${Object.entries(cnt).sort((a,b)=>b[1]-a[1]).map(([k,v])=>k+'×'+v).join('、')}。</p><p>按书上：${lines.map(([t,l])=>`<b>${l}</b>`).join('；')}。${mz&&('巳午'.includes(mz)&&cnt['离']&&!cnt['坎']?'夏天离多而无坎，主亢旱。':'亥子'.includes(mz)&&cnt['坎']&&!cnt['离']?'冬天坎多而无离，主雨雪。':'')}出现最多的卦分量最重。</p>`}
   const html=`<span class="tape"></span>
    <div class="o-head"><span class="o-title">梅花易数</span><span class="badge">占${o.q}</span></div>
    <div class="o-meta">${todayStr().replace(/-/g,'.')} · ${lunarStamp(L)}</div>
@@ -501,28 +583,31 @@ function castMH(o){
      <div class="gua">${hexHTML(bian,0)}<b>${guaName(bian)}</b>变卦</div>
      <div class="gua"><b style="font-size:20px">${['初','二','三','四','五','上'][mv-1]}</b>动爻</div>
    </div>
-   <div class="o-big" style="font-size:24px">${rel}${lvl(relK==='good'?'吉':relK==='bad'?'凶':'耗',relK)}</div>
+   <div class="o-big" style="font-size:24px">${isTS?'天时不分体用':rel+lvl(relK==='good'?'吉':relK==='bad'?'凶':'耗',relK)}</div>
    <div class="ask">体卦 <b>${ti}${TRI_WX[ti]}</b>（${season}${tiState}） · 用卦 <b>${yong}${TRI_WX[yong]}</b></div>
-   ${plainBox(`<p>体卦代表你，用卦代表${o.ask?'「'+esc(o.ask)+'」':'你问的事'}。${ti}属${TRI_WX[ti]}，${yong}属${TRI_WX[yong]}，${REL_PLAIN[rel]}${TI_PLAIN[tiState]}</p><p>本卦「${guaName(bits)}」讲的是${GUA_PLAIN[G[0]]||''}；事情中间的状态看互卦「${guaName(hu)}」：${GUA_PLAIN[D.GUA[hu][0]]||''}；最后的走向看变卦「${guaName(bian)}」：${GUA_PLAIN[GB[0]]||''}。</p>`)}
+   ${plainBox(isTS?tsTxt+`<p>本卦「${guaName(bits)}」，互卦「${guaName(hu)}」，变卦「${guaName(bian)}」。</p>`:`<p>体卦代表你，用卦代表${o.ask?'「'+esc(o.ask)+'」':'你问的事'}。${ti}属${TRI_WX[ti]}，${yong}属${TRI_WX[yong]}，${REL_PLAIN[rel]}${CAT_PLAIN[o.q]?`占${o.q}具体是：<b>${CAT_PLAIN[o.q][REL_IDX[rel]]}</b>。`:''}${TI_PLAIN[tiState]}</p><p>事情中段看互卦：${rH.map(([x,r])=>`${x}${TRI_WX[x]}${REL2[r][0]}`).join('，')}${rH.some(([x,r])=>r==='克体')?'，中途有阻力':rH.some(([x,r])=>r==='生体')?'，中途有助力':''}。结果看变卦：用卦变成${bianYong}${TRI_WX[bianYong]}，${REL2[rB][0]}，结果${REL2[rB][1]}。合起来是<b>${trend}</b>。</p><p class="sub">本卦「${guaName(bits)}」讲的是${gp(G[0])}；互卦「${guaName(hu)}」：${gp(D.GUA[hu][0])}；变卦「${guaName(bian)}」：${gp(GB[0])}。</p>`)}
    <div class="sec"><h4>占${o.q}</h4>${qline(cat[0],'《梅花易数》'+cat[2].replace('梅花易数·',''))}${cat[1]?`<p style="font-size:12.5px;color:var(--ink-2)">白话：${cat[1]}</p>`:''}</div>
    <div class="sec"><h4>本卦卦辞</h4>${qline(`${G[0]}：${stripName(G[1])}`,'《周易》')}${qline(G[2],'《象》')}</div>
    <div class="sec"><h4>动爻爻辞</h4>${qline(G[3][mv-1],'《周易》')}</div>
    <div class="sec"><h4>变卦卦辞 · 事之末应</h4>${qline(`${GB[0]}：${stripName(GB[1])}`,'《周易》')}</div>
-   <div class="sec"><h4>起卦</h4><p style="font-size:12.5px">${how}。动爻在${mv<=3?'下':'上'}卦，故${mv<=3?'下':'上'}卦为用、${mv<=3?'上':'下'}卦为体。</p>${qline(D.MH_ZONG,'《梅花易数》卷二 · 體用總訣')}</div>
+   <div class="sec"><h4>起卦</h4><p style="font-size:12.5px">${how}。动爻在${mv<=3?'下':'上'}卦，故${mv<=3?'下':'上'}卦为用、${mv<=3?'上':'下'}卦为体。${o.how==='num'?'':'年支取农历年（以正月初一为界，有的流派以立春为界，春节前后几天两种口径会起出不同的卦）；晚上 11 点后的子时仍算当天。'}</p>${qline(D.MH_ZONG,'《梅花易数》卷二 · 體用總訣')}${qline(D.MH_TIYONG,'《梅花易数》卷一 · 先天後天論')}${qline('用吉變凶者，先吉後凶；用凶變吉者，先凶後吉。','《梅花易数》卷二 · 體用生克篇之一')}</div>
    <div class="n-foot"><span>体用、卦气以《梅花易数》为据</span><span class="badge">梅花易数</span></div>`;
   return {html,stamp:'梅'};
 }
 
 /* ---- 大六壬 ---- */
-const KETI={元首:'四课中只有一课上克下，取之为初传。',重审:'四课中只有一课下贼上，取之为初传。',知一:'有两课以上克贼，取与日干阴阳相比者为用。',比用:'有两课以上克贼，取与日干阴阳相比者为用。',涉害:'克贼俱比或俱不比，取涉害深者为用。',遥克:'四课无克贼，取上神与日干遥相克者为用（神克日为蒿矢，日克神为弹射）。',昴星:'四课无克又无遥克，阳日取地盘酉上神、阴日取天盘酉下神为初传。',别责:'四课不全（只得三课）又无克，阳日取干合之神、阴日取支前三合为用。',八专:'干支同位，四课只得两课。',伏吟:'月将加时同位，天地盘不动。',反吟:'天地盘六冲，天盘与地盘相对。'};
+const KETI={元首:'四课中只有一课上克下，取之为初传。',重审:'四课中只有一课下贼上，取之为初传。',知一:'有两课以上克贼，取与日干阴阳相比者为用。',比用:'有两课以上克贼，取与日干阴阳相比者为用。',涉害:'有两课以上克贼，与日干俱比或俱不比，取涉害深者为用；深浅相同，先取地盘四孟上神，次四仲、四季。',遥克:'四课无克贼，取上神与日干遥相克者为用（神克日为蒿矢，日克神为弹射）。',昴星:'四课无克又无遥克，阳日取地盘酉上神、阴日取天盘酉下神为初传。',别责:'四课不全（只得三课）又无克，阳日取干合之神、阴日取支前三合为用。',八专:'干支同位，四课只得两课。',伏吟:'月将加时同位，天地盘不动。',反吟:'天地盘六冲，天盘与地盘相对。'};
 const JI_JIANG=['贵人','六合','青龙','太常','太阴','天后'];
 const LIUQIN={官鬼:'克日干者',父母:'生日干者',妻财:'日干所克',子孙:'日干所生',兄弟:'与日干同五行'};
 function dlrPlain(r,kong){const parts=[['开头','chuChuan'],['过程中','zhongChuan'],['最后','moChuan']].map(([n,k])=>{const v=r.sanChuan[k];
     return `${n}落在${v[0]}，牵涉${LQ_PLAIN[v[2]]||v[2]}，遇${v[1]}（${JI_JIANG.includes(v[1])?'吉将':'凶将'}），${JIANG_PLAIN[v[1]]||''}${kong.includes(v[0])?'；这一步落空亡，多半虚而不实':''}`});
   const good=['chuChuan','zhongChuan','moChuan'].filter(k=>JI_JIANG.includes(r.sanChuan[k][1])).length;
-  return `<p>${parts.join('。<br>')}。</p><p class="sub">三传里吉将 ${good} 个、凶将 ${3-good} 个。末传看归结，最后一步最要紧。</p>`}
+  return `<p>${parts.join('。<br>')}。</p><p class="sub">三传里吉将 ${good} 个、凶将 ${3-good} 个。末传看归结，最后一步最要紧。天将、六亲代表的事情是通行释义。</p>`}
+function dlrAt(now){let r=X.getLiuRenByDate(now),late=false,jiangNote='';
+  if(now.getHours()===23){const d=new Date(now);d.setHours(0,30,0,0);const r0=X.getLiuRenByDate(d);if(r0.dateInfo.yuejiang!==r.dateInfo.yuejiang)jiangNote=`（今日中气交接，月将已换为${r.dateInfo.yuejiang}，此处按当日0点的${r0.dateInfo.yuejiang}）`;r=r0;late=true}
+  return{r,late,jiangNote}}
 function castDLR(o){
-  const now=new Date(),r=X.getLiuRenByDate(now),L=nowLunar(),di=r.dateInfo,kong=di.kong||[];
+  const now=new Date(),dl=dlrAt(now),r=dl.r,L=nowLunar(),di=r.dateInfo,kong=di.kong||[];
   const kts=String(r.sanChuan.keTi||'').split('·');const kt=kts[0];
   const ke=['ke1','ke2','ke3','ke4'].map((k,i)=>{const v=r.siKe[k];return`<div>${v[0][0]}<br>${v[0][1]}<small>${['一','二','三','四'][i]}课 · ${v[1]}</small></div>`}).join('');
   const ch=[['初传','chuChuan','事之始'],['中传','zhongChuan','事之中'],['末传','moChuan','事之终']].map(([n,k,m])=>{const v=r.sanChuan[k];const empty=kong.includes(v[0]);
@@ -536,42 +621,50 @@ function castDLR(o){
    <div class="sec"><h4>三传</h4><div class="chuan">${ch}</div></div>
    <div class="sec"><h4>课体 · ${esc(kt)}</h4><p>${KETI[kt]||''}${kts[1]?`三传另成「${esc(kts[1])}」格。`:''}</p></div>
    <div class="sec"><h4>怎么看</h4><p style="font-size:12.5px">初传为发用，看事情从何而起；中传看过程；末传看归结。天将中贵人、六合、青龙、太常、太阴、天后为吉将，螣蛇、朱雀、勾陈、天空、白虎、玄武为凶将。六亲以日干为我：${Object.entries(LIUQIN).map(([k,v])=>k+'＝'+v).join('，')}。</p></div>
+   ${dl.late?`<div class="ask">晚上 11 点后的子时，仍按当天的日干支起课（0 点换日）${dl.jiangNote}。</div>`:''}
    <div class="n-foot"><span>课式依九宗门取三传，月将以中气换将</span><span class="badge">大六壬</span></div>`;
   return {html,stamp:'课'};
 }
 
 /* ---- 八字 · 今日 ---- */
-function birthLunar(){const p=S.profile;const [y,m,d]=p.birth.split('-').map(Number);const H=p.hour==null?12:HOUR_H[p.hour];return X.Solar.fromYmdHms(y,m,d,H,30,0).getLunar()}
+const HE5={甲:'己',己:'甲',乙:'庚',庚:'乙',丙:'辛',辛:'丙',丁:'壬',壬:'丁',戊:'癸',癸:'戊'};
 function castBZ(){
-  const p=S.profile,BL=birthLunar(),ec=BL.getEightChar(),dm=ec.getDayGan(),hasH=p.hour!=null;
-  const cols=[['年柱',ec.getYear(),ec.getYearNaYin()],['月柱',ec.getMonth(),ec.getMonthNaYin()],['日柱',ec.getDay(),ec.getDayNaYin()]];if(hasH)cols.push(['时柱',ec.getTime(),ec.getTimeNaYin()]);
+  const p=S.profile,bc=birthCalc(),lunOf=c=>X.Solar.fromYmdHms(c.y,c.m,c.d,c.H,c.M,0).getLunar();
+  const LB=lunOf(bc.bj),LL=lunOf(bc.loc),ecB=LB.getEightChar(),ecL=LL.getEightChar(),BL=LL,ec=ecL,hasH=bc.known;
+  const NY=gz=>X.LunarUtil.NAYIN[gz]||'';
+  const yG=ecB.getYear(),mG=ecB.getMonth(),dG=ecL.getDay(),tG=ecL.getTime(),dm=dG[0];
+  const cols=[['年柱',yG,NY(yG)],['月柱',mG,NY(mG)],['日柱',dG,NY(dG)]];if(hasH)cols.push(['时柱',tG,NY(tG)]);
   const pillars=cols.map(([n,gz,ny],i)=>`<div class="pillar ${i===2?'day':''}"><small>${i===2?'日主':shishen(dm,gz[0])}</small><b>${gz[0]}<br>${gz[1]}</b><small>${n} · ${ny}</small></div>`).join('')+(hasH?'':'<div class="pillar"><small>时辰未填</small><b style="color:var(--line-strong)">?<br>?</b><small>时柱</small></div>');
   const cnt={木:0,火:0,土:0,金:0,水:0};cols.forEach(c=>{cnt[WXG[c[1][0]]]++;cnt[WXZ[c[1][1]]]++});const tot=cols.length*2;
   const N=nowLunar(),ly=N.getYearInGanZhiExact(),lm=N.getMonthInGanZhiExact(),ld=N.getDayInGanZhi();
   const ssD=shishen(dm,ld[0]),dz=ec.getDay()[1],tz=ld[1];
   const rel=CHONG[dz]===tz?`今日日支${tz}冲日柱地支${dz}（${dz}${tz}相冲）`:HE6[dz]===tz?`今日日支${tz}与日柱地支${dz}六合`:tz===dz?`今日日支与日柱地支同为${dz}`:`今日日支${tz}与日柱地支${dz}不冲不合`;
-  let yun='';if(p.gender==='女'||p.gender==='男'){try{const Y=ec.getYun(p.gender==='男'?1:0),ny=new Date().getFullYear();const dy=Y.getDaYun().find(d=>d.getGanZhi()&&d.getStartYear()<=ny&&d.getEndYear()>=ny);
+  const he5=HE5[dm]===ld[0];
+  let yun='';if(p.gender==='女'||p.gender==='男'){try{const Y=ecB.getYun(p.gender==='男'?1:0),ny=new Date().getFullYear();const dy=Y.getDaYun().find(d=>d.getGanZhi()&&d.getStartYear()<=ny&&d.getEndYear()>=ny);
     yun=`<dt>大运</dt><dd>${dy?`${dy.getGanZhi()}（${dy.getStartYear()}–${dy.getEndYear()}，${shishen(dm,dy.getGanZhi()[0])}运）`:'尚未起运'} · ${Y.getStartYear()}年${Y.getStartMonth()}个月${Y.getStartDay()}天起运</dd>`}catch(e){}}
   const html=`<span class="tape"></span>
    <div class="o-head"><span class="o-title">八字 · 今日</span><span class="badge">${esc(p.name||'我')}</span></div>
-   <div class="o-meta">生于 ${p.birth.replace(/-/g,'.')} ${hasH?hourName(p.hour):'（时辰未填，只排三柱）'} · ${BL.getYearInChinese()}年${BL.getMonthInChinese()}月${BL.getDayInChinese()}</div>
+   <div class="o-meta">生于 ${p.birth.replace(/-/g,'.')} ${p.time?p.time:hasH?hourName(p.hour):'（时辰未填，只排三柱）'} · ${BL.getYearInChinese()}年${BL.getMonthInChinese()}月${BL.getDayInChinese()}<br>${bc.note}</div>
    <div class="sec"><div class="grid4">${pillars}</div></div>
    <div class="sec"><h4>五行个数（干支各算一个，共 ${tot} 个）</h4><div class="wx">${Object.entries(cnt).map(([k,v])=>`<div><i style="--h:${v/tot*100}%"></i>${k} ${v}</div>`).join('')}</div></div>
    <div class="sec"><h4>今日</h4><dl class="kv"><dt>日主</dt><dd>${dm}${WXG[dm]}（${isYang(dm)?'阳':'阴'}）</dd><dt>流年</dt><dd>${ly}（${shishen(dm,ly[0])}）</dd><dt>流月</dt><dd>${lm}（${shishen(dm,lm[0])}）</dd><dt>流日</dt><dd><b style="font-weight:500">${ld}</b>（天干${ld[0]}为${ssD}）</dd>${yun}</dl></div>
    <div class="o-big" style="font-size:24px">今日见${ssD}</div>
-   <p style="font-size:13.5px;line-height:1.8;margin:0">${SHISHEN_DESC[ssD]}${rel}。</p>
-   ${plainBox(`<p>你的日主是${dm}${WXG[dm]}。今天是${ld}日，对你来说是「${ssD}」：${SS_PLAIN[ssD]}</p><p>${CHONG[dz]===tz?'今天和你的日支相冲，冲主变动，今天容易有计划被打乱、心里不安稳的感觉，适合放慢节奏。':HE6[dz]===tz?'今天和你的日支相合，合主和顺，人际和合作上比较好说话。':tz===dz?'今天的日支和你的日支相同，同气相求，比较自在。':'今天和你的日支不冲不合，没有额外的波动。'}今年${ly}对你是「${shishen(dm,ly[0])}」，这个月${lm}是「${shishen(dm,lm[0])}」，可以当作大背景。</p>`)}
+   <p style="font-size:13.5px;line-height:1.8;margin:0">${SHISHEN_DESC[ssD]}${rel}。${he5?`今日天干${ld[0]}与日主${dm}相合（${dm}${ld[0]}合）。`:''}</p>
+   ${plainBox(`<p>你的日主是${dm}${WXG[dm]}。今天是${ld}日，对你来说是「${ssD}」：${SS_PLAIN[ssD]}</p><p>${CHONG[dz]===tz?'今天和你的日支相冲，冲主变动，今天容易有计划被打乱、心里不安稳的感觉，适合放慢节奏。':HE6[dz]===tz?'今天和你的日支相合，合主和顺，人际和合作上比较好说话。':tz===dz?'今天的日支和你的日支相同，同气相求，比较自在。':'今天和你的日支不冲不合，没有额外的波动。'}${he5?`今天的天干${ld[0]}和你的日主${dm}相合，通行释义主和合、牵绊，容易被人或事“绑住”，也容易谈拢。`:''}今年${ly}对你是「${shishen(dm,ly[0])}」，这个月${lm}是「${shishen(dm,lm[0])}」，可以当作大背景。</p>`)}
    <div class="sec"><h4>说明</h4><p style="font-size:12.5px;color:var(--ink-2)">十神按子平法以日干为我推定。日主强弱、格局与喜用神要综合全盘才能判断，这里只列出排盘和今日干支的关系，不替你下结论。</p></div>
-   <div class="n-foot"><span>节气交接按天文历推算，未做真太阳时校正</span><span class="badge">八字</span></div>`;
+   <div class="n-foot"><span>年月柱按出生时刻对应的北京时间定节气；日柱、时柱按出生地${bc.tst?'真太阳时':'当地时间'}；晚子时不换日</span><span class="badge">八字</span></div>`;
   return {html,stamp:'命'};
 }
 
 /* ---- 紫微 · 今日 ---- */
-const STAR_WX={紫微:'阴土',天机:'阴木',太阳:'阳火',武曲:'阴金',天同:'阳水',廉贞:'阴火',天府:'阳土',太阴:'阴水',贪狼:'阳木',巨门:'阴水',天相:'阳水',天梁:'阳土',七杀:'阴金',破军:'阴水'};
+const STAR_WX={紫微:'阴土',天机:'阴木',太阳:'阳火',武曲:'阴金',天同:'阳水',廉贞:'阴火，兼木',天府:'阳土',太阴:'阴水',贪狼:'阳木，兼水',巨门:'阴水，一说阴土',天相:'阳水',天梁:'阳土',七杀:'阴金，兼火',破军:'阴水'};
 const PALACE_DESC={命宫:'自身性情与整体走向',兄弟:'手足、同辈',夫妻:'伴侣与感情',子女:'子女、创作与晚辈',财帛:'钱财进出',疾厄:'身体状况',迁移:'外出与外界际遇',仆役:'朋友、同事、部属',交友:'朋友、同事、部属',官禄:'事业、学业',田宅:'居所、家宅',福德:'精神状态与享受',父母:'长辈、上司与文书'};
 const SIHUA=[['化禄','财禄、顺遂与机缘'],['化权','掌控与能力发挥'],['化科','名声、贵人与文书'],['化忌','阻滞与执着，需要留心']];
 function castZW(){
-  const p=S.profile,a=X.astro.bySolar(p.birth,p.hour,p.gender,true,'zh-CN');
+  const p=S.profile,bc=birthCalc(),lc=bc.loc,ds=`${lc.y}-${lc.m}-${lc.d}`,LL=X.Solar.fromYmdHms(lc.y,lc.m,lc.d,lc.H,lc.M,0).getLunar(),isLeap=LL.getMonth()<0;
+  const lp=p.leap||'half';let a,leapTxt='';
+  if(isLeap&&lp==='next'){let ly=LL.getYear(),lm=Math.abs(LL.getMonth())+1;if(lm>12){lm=1;ly++}a=X.astro.byLunar(`${ly}-${lm}-${LL.getDay()}`,bc.hourIdx,p.gender,false,false,'zh-CN');leapTxt='闰月生：整月按下个月排'}
+  else{a=X.astro.bySolar(ds,bc.hourIdx,p.gender,lp!=='this','zh-CN');if(isLeap)leapTxt=lp==='this'?'闰月生：整月按本月排':'闰月生：前半月按本月、十五日后按下个月排'}
   const ming=a.palaces.find(x=>x.name==='命宫'),body=a.palaces.find(x=>x.isBodyPalace);
   const starTxt=pl=>pl.majorStars.length?pl.majorStars.map(s=>`${s.name}${s.brightness?'<small style="color:var(--ink-2)">'+s.brightness+'</small>':''}${STAR_WX[s.name]?`（${STAR_WX[s.name]}）`:''}${s.mutagen?' 化'+s.mutagen:''}`).join('、'):'';
   let mingStars=starTxt(ming);if(!mingStars){const opp=a.palaces[(a.palaces.indexOf(ming)+6)%12];mingStars=`命无正曜，借对宫（${opp.name}）主星：${starTxt(opp)||'亦无'}`}
@@ -580,18 +673,30 @@ function castZW(){
   const sihua=h.daily.mutagen.map((n,i)=>`<dt>${SIHUA[i][0]}</dt><dd>${n} · 在本命${findStar(n)}（${PALACE_DESC[findStar(n)]||''}）</dd>`).join('');
   const html=`<span class="tape"></span>
    <div class="o-head"><span class="o-title">紫微 · 今日</span><span class="badge">${esc(p.name||'我')}</span></div>
-   <div class="o-meta">${a.lunarDate} ${a.time} · ${a.chineseDate} · ${p.gender}</div>
+   <div class="o-meta">${a.lunarDate} ${a.time} · ${a.chineseDate} · ${p.gender}<br>${bc.note}${leapTxt?'；'+leapTxt:''}</div>
    <div class="sec"><h4>本命</h4><dl class="kv"><dt>命宫</dt><dd>${ming.heavenlyStem}${ming.earthlyBranch} · ${mingStars}</dd><dt>身宫</dt><dd>${body?body.name:''}</dd><dt>五行局</dt><dd>${a.fiveElementsClass}</dd><dt>命主</dt><dd>${a.soul}</dd><dt>身主</dt><dd>${a.body}</dd></dl></div>
    <div class="o-big" style="font-size:22px">流日命宫在本命${dPal.name}</div>
    <p style="font-size:13.5px;line-height:1.8;margin:0">今日（${h.daily.heavenlyStem}${h.daily.earthlyBranch}日）以本命${dPal.name}为流日命宫，这一天多与「${PALACE_DESC[dPal.name]||''}」相关。流年（${h.yearly.heavenlyStem}${h.yearly.earthlyBranch}）命宫在本命${yPal.name}。</p>
    ${plainBox(`<p>今天的重心在「${PALACE_DESC[dPal.name]||dPal.name}」这一块。</p><p>化禄落在${findStar(h.daily.mutagen[0])}，${PALACE_DESC[findStar(h.daily.mutagen[0])]||''}方面比较顺、有机会；化权落在${findStar(h.daily.mutagen[1])}，这方面你说了算；化科落在${findStar(h.daily.mutagen[2])}，这方面容易得到认可或贵人帮忙；化忌落在${findStar(h.daily.mutagen[3])}，${PALACE_DESC[findStar(h.daily.mutagen[3])]||''}方面容易卡住，多留心、别钻牛角尖。</p>`)}
    <div class="sec"><h4>流日四化（${h.daily.heavenlyStem}干）</h4><dl class="kv">${sihua}</dl><p style="font-size:12.5px;color:var(--ink-2);margin-top:6px">${SIHUA.map(s=>s[0]+'主'+s[1]).join('；')}（通行释义）。</p></div>
-   <div class="n-foot"><span>依紫微斗数安星法排盘，未做真太阳时校正</span><span class="badge">紫微斗数</span></div>`;
+   <div class="n-foot"><span>依紫微斗数安星法排盘；时辰按出生地${bc.tst?'真太阳时':'当地时间'}</span><span class="badge">紫微斗数</span></div>`;
   return {html,stamp:'紫'};
 }
 
 /* ---- 今日黄历 ---- */
-function hlPlain(L){const yi=L.getDayYi(),ji=L.getDayJi(),ch=(L.getDayChongDesc().match(/\)(.+)$/)||[])[1];
+const HLG={祭祀:['祭拜祖先、神明',2],嫁娶:['结婚',2],求嗣:['向神明祈求子嗣',2],冠笄:['成人礼（冠指男子、笄指女子）',2],纳采:['订婚下聘，婚姻六礼之一',2],进人口:['家中添人：古指收养子女，今也指添丁、招人',2],纳财:['进财：购置产业、进货、收账等',2],纳畜:['买入家畜，今也指收养宠物',2],会亲友:['宴请、聚会亲友',2],上梁:['安装房屋的屋顶大梁',2],伐木:['砍伐树木',2],出行:['出门远行',2],开市:['开业、开张营业',2],入宅:['搬入新居',2],移徙:['搬家',2],修造:['房屋（阳宅）的建造与修缮',2],动土:['盖房（阳宅）开工，挖下第一锄土',2],破土:['专指墓葬（阴宅）开挖，和盖房的「动土」不是一回事',2],立券:['订立契约、签合同',2],祈福:['祈求神明降福，许愿还愿',2],解除:['清扫宅舍、解除灾厄',2],安葬:['埋葬',2],启钻:['拾骨迁葬（又写作「启攒」）',2],破屋:['拆除房屋',2],坏垣:['拆除围墙',2],栽种:['种植',2],平治道涂:['铺路、修路',2],定磉:['安放柱子底下的石墩（柱础）',2],
+作灶:['安修厨灶、移动灶位',1],安门:['安装门户',1],开光:['神佛像塑成后开光供奉',1],出火:['移动神位（「火」指香火），不是失火',1],拆卸:['拆掉建筑物',1],立碑:['在墓前立碑',1],修坟:['修理坟墓',1],行丧:['举行丧礼',1],挂匾:['悬挂招牌、匾额',1],合帐:['制作蚊帐',1],纳婿:['男方入赘女家',1],斋醮:['设坛做法事前的斋戒仪式',1],安香:['安放神位、香火',1],塑绘:['塑神像、绘画像',1],谢土:['建筑完工后祭谢土神',1],入殓:['把遗体放入棺材',1],移柩:['出殡时把棺木移出屋外',1],开生坟:['预先开造坟墓',1],馀事勿取:['除了所列之事，其他事都不宜做',1],除服:['脱下丧服',1],成服:['穿上丧服',1],架马:['与上梁相关的营建工序，一说同上梁',1],
+入学:['入学、拜师',1],赴任:['上任就职',1],安床:['安置床铺（搬新居、新婚时）',1],扫舍:['打扫房屋',1],沐浴:['沐浴斋戒、洗澡',1],理发:['理发；古指婴儿剃胎发或出家剃度',1],整手足甲:['修剪手脚指甲（古指婴儿初次剪甲）',1],求医:['看病求医、动手术',1],裁衣:['裁制衣服（古指婚前裁嫁衣）',1],经络:['古指安置纺车、织布，今也引申为安装机器',1],修饰垣墙:['粉刷修整墙壁、围墙',1],乘船:['乘船渡水',1],筑堤:['修筑堤防',1],竖柱:['竖立房屋承重柱',1],开渠:['开挖水渠',1],交易:['买卖、投资等交易',1],出货财:['出货、发货',1],畋猎:['打猎',1],取渔:['捕鱼',1],结网:['结网捕鱼',1],牧养:['放牧牛羊家禽',1],问名:['婚姻六礼之一：问女方姓名、生辰',1],断蚁:['堵塞蚂蚁洞',1],
+盖屋:['盖房子',0],起基:['打地基',0],作梁:['制作房梁',0],掘井:['挖井',0],开池:['开挖水池',0],置产:['购置田产房产',0],造畜稠:['修建牲畜栏圈',0],塞穴:['堵塞洞穴',0],补垣:['修补墙垣',0],开仓:['开仓出粮',0],造仓:['建造仓库',0],造船:['造船',0],造桥:['造桥',0],造车器:['制造车具',0],雕刻:['雕刻',0],词讼:['打官司',0],探病:['探望病人',0],治病:['治病',0],针灸:['针灸',0],习艺:['学手艺',0],分居:['分家另住',0],归宁:['出嫁女子回娘家探亲（古义）',0],雇佣:['雇人',0],安机械:['安装机械',0],安碓磑:['安装舂米的碓和石磨',0],开柱眼:['在柱子上凿榫眼',0],合脊:['屋脊合拢、封顶',0],普渡:['超度亡灵的法会',0],割蜜:['取蜂蜜',0],教牛马:['调教牛马',0],开厕:['修建厕所',0],放水:['开闸放水',0],合寿木:['预先制作棺木（寿材）',0],造庙:['修建庙宇',0],修门:['修理门户',0],诸事不宜:['所有事都不宜做',0],无:['没有特别宜做 / 忌做的事',0],归岫:['',-1],订盟:['订婚，或缔结盟约',0],捕捉:['捕捉禽兽、害虫',0]};
+const HLG_TAG=['字面义，未查到两个独立来源，仅供参考','单一来源','两个来源互证'];
+document.addEventListener('click',e=>{const t=e.target.closest('.yj [data-t]');if(!t)return;const sec=t.closest('.sec');const k=t.dataset.t,g=HLG[k];
+  let box=sec.querySelector('.qhint');if(box&&box.dataset.k===k){box.remove();return}if(!box){box=document.createElement('div');box.className='qhint';sec.appendChild(box)}
+  box.dataset.k=k;box.innerHTML=g&&g[1]>=0?`<b>${k}</b>：${g[0]}<br><span style="font-size:11px;color:var(--ink-2)">${HLG_TAG[g[1]]}</span>`:`<b>${k}</b>：暂未找到可靠解释`;
+  box.animate([{opacity:0,transform:'translateY(-4px)'},{opacity:1,transform:'none'}],{duration:180});clack(0,.05)});
+
+const HL_RISK=['破土','出火','纳采','问名','立券','移徙','冠笄','进人口','启钻','解除','经络','成服','除服','馀事勿取','斋醮','开光','安香','谢土','合帐','纳婿','整手足甲','归宁','订盟','定磉','平治道涂','求嗣','入殓','移柩','开生坟','合寿木','畋猎','取渔','纳畜','纳财','修造'];
+const gl=t=>HL_RISK.includes(t)&&HLG[t]?`${t}（${HLG[t][0]}）`:t;
+function hlPlain(L){const yi=L.getDayYi().map(gl),ji=L.getDayJi().map(gl),ch=(L.getDayChongDesc().match(/\)(.+)$/)||[])[1];
   return `<p>今天是${L.getDayTianShenType()}日（值神${L.getDayTianShen()}，${L.getDayTianShenLuck()}），${ZX_PLAIN[L.getZhiXing()]||L.getZhiXing()+'日'}。</p><p>适合做：${yi.slice(0,6).join('、')}${yi.length>6?' 等':''}。<br>尽量别做：${ji.slice(0,6).join('、')}${ji.length>6?' 等':''}。</p>${ch?`<p class="sub">今天冲属${ch}的人，属${ch}的话凡事多留个心眼。喜神在${L.getDayPositionXiDesc()}，财神在${L.getDayPositionCaiDesc()}。</p>`:''}`}
 function castHL(){
   const L=nowLunar(),ts=L.getDayTianShenType();
@@ -600,15 +705,15 @@ function castHL(){
    <div class="o-meta">${todayStr().replace(/-/g,'.')} · ${L.getYearInGanZhi()}年 ${L.getMonthInChinese()}月${L.getDayInChinese()} · ${L.getMonthInGanZhi()}月 ${L.getDayInGanZhi()}日</div>
    <div class="o-big" style="font-size:26px">${L.getZhiXing()}日 · ${L.getDayTianShen()}${lvl(L.getDayTianShenLuck(),L.getDayTianShenLuck()==='吉'?'good':'bad')}</div>
    ${plainBox(hlPlain(L))}
-   <div class="sec"><h4>宜</h4><div class="yj">${L.getDayYi().map(x=>`<span>${x}</span>`).join('')}</div></div>
-   <div class="sec"><h4>忌</h4><div class="yj ji">${L.getDayJi().map(x=>`<span>${x}</span>`).join('')}</div></div>
+   <div class="sec"><h4>宜<span class="qtip">点词条看古义</span></h4><div class="yj">${L.getDayYi().map(x=>`<span data-t="${x}">${x}</span>`).join('')}</div></div>
+   <div class="sec"><h4>忌</h4><div class="yj ji">${L.getDayJi().map(x=>`<span data-t="${x}">${x}</span>`).join('')}</div></div>
    <div class="sec"><dl class="kv"><dt>冲煞</dt><dd>冲${L.getDayChongDesc()} · 煞${L.getDaySha()}</dd><dt>星宿</dt><dd>${L.getXiu()}宿（${L.getXiuLuck()}）</dd><dt>喜神</dt><dd>${L.getDayPositionXiDesc()}</dd><dt>福神</dt><dd>${L.getDayPositionFuDesc()}</dd><dt>财神</dt><dd>${L.getDayPositionCaiDesc()}</dd><dt>彭祖百忌</dt><dd>${L.getPengZuGan()}　${L.getPengZuZhi()}</dd><dt>节气</dt><dd>${L.getPrevJieQi().getName()}后</dd></dl></div>
    <div class="n-foot"><span>宜忌、值神、建除依传统择日规则推算</span><span class="badge">黄历</span></div>`;
   return {html,stamp:'历'};
 }
 
 /* ---- 起课前的输入 ---- */
-function missingFor(k){const p=S.profile,m=[];if(k==='bz'||k==='zw'){if(!p.birth)m.push('出生日期')}if(k==='zw'){if(p.hour==null)m.push('出生时辰');if(p.gender!=='女'&&p.gender!=='男')m.push('性别')}return m}
+function missingFor(k){const p=S.profile,m=[];if(k==='bz'||k==='zw'){if(!p.birth)m.push('出生日期')}if(k==='zw'){if(p.hour==null&&!p.time)m.push('出生时辰');if(p.gender!=='女'&&p.gender!=='男')m.push('性别')}return m}
 function askOracle(){
   const k=S.method,M=METHODS[k],L=nowLunar();
   const miss=missingFor(k);
@@ -631,7 +736,7 @@ function askOracle(){
     if(k==='xlr'||k==='mh'){h+=`<div class="lab2">起课方式</div><div class="segs" data-g="how"><button type="button" class="chip plain" data-v="time" aria-pressed="${st.how==='time'}">用此刻时间</button><button type="button" class="chip plain" data-v="num" aria-pressed="${st.how==='num'}">${k==='xlr'?'报三个数':'报数'}</button></div>`;
       h+=st.how==='time'?`<div class="note" style="margin-top:10px">${timeNote[k]}</div>`:`<div class="ntiles ${k==='mh'?'two':''}">${(k==='xlr'?[0,1,2]:[0,1]).map(i=>`<button type="button" class="ntile ${st.slot===i?'on':''}" data-slot="${i}"><b class="${st.nums[i]?'':'ph'}">${st.nums[i]||'–'}</b><small>${k==='mh'?(i===0?'上卦数':'下卦数 · 可不填'):'第'+'一二三'[i]+'个数'}</small></button>`).join('')}</div>
         <div class="keypad">${[1,2,3,4,5,6,7,8,9].map(n=>`<button type="button" data-key="${n}">${n}</button>`).join('')}<button type="button" class="fn" data-key="c">清空</button><button type="button" data-key="0">0</button><button type="button" class="fn" data-key="b">⌫</button></div><div class="ask">${k==='xlr'?'心里想着所问之事，随口报三个 1–99 的数。':'报一个数：作上卦，时辰数作下卦；报两个数：先数为上卦，后数为下卦。'}</div>`}
-    if(k==='dlr'){const r=X.getLiuRenByDate(new Date());h+=`<div class="note" style="margin-top:12px">以此刻起课：${r.dateInfo.bazi.split(' ')[2]}日 ${L.getTimeZhi()}时，月将 ${r.dateInfo.yuejiang}。</div>`}
+    if(k==='dlr'){const r=dlrAt(new Date()).r;h+=`<div class="note" style="margin-top:12px">以此刻起课：${r.dateInfo.bazi.split(' ')[2]}日 ${L.getTimeZhi()}时，月将 ${r.dateInfo.yuejiang}。</div>`}
     if(k==='bz')h+=`<div class="note" style="margin-top:12px">用设置里的个人信息：${p.birth.replace(/-/g,'.')} ${p.hour!=null?hourName(p.hour):'时辰未填'}${p.gender?' · '+p.gender:''}</div>`;
     if(k==='zw')h+=`<div class="note" style="margin-top:12px">用设置里的个人信息：${p.birth.replace(/-/g,'.')} ${hourName(p.hour)} · ${p.gender}</div>`;
     if(k==='hl')h+=`<div class="note">今天 ${todayStr().replace(/-/g,'.')} · ${L.getMonthInChinese()}月${L.getDayInChinese()}。不用输入，直接摇签。</div>`;
@@ -856,8 +961,11 @@ function renderSettings(){
     <div class="srow" style="cursor:default">称呼<input class="tin" id="pName" maxlength="10" placeholder="可不填" value="${esc(p.name||'')}" style="max-width:160px;text-align:right;background:var(--paper);border:0"></div>
     <div class="srow" style="cursor:default">性别<span class="segs">${['女','男'].map(g=>`<button type="button" class="chip plain" data-gender="${g}" aria-pressed="${p.gender===g}">${g}</button>`).join('')}</span></div>
     <button class="srow" data-birth>出生日期 <span class="${p.birth?'set':''}">${p.birth?p.birth.replace(/-/g,'.')+' · '+lunarText(p.birth):'未填'}</span></button>
-    <button class="srow" data-hour>出生时辰 <span class="${p.hour!=null?'set':''}">${p.hour!=null?hourName(p.hour)+' '+HOURS[p.hour][1]:'未填'}</span></button>
-    <p class="hint">八字要出生日期；紫微斗数要出生日期、时辰和性别。只保存在这台设备的浏览器里。暂未按出生地做真太阳时校正。${p.birth||p.gender||p.hour!=null||p.name?' <button class="badge" data-clearp style="cursor:pointer">清除个人信息</button>':''}</p>
+    <button class="srow" data-hour>出生时间 <span class="${p.hour!=null||p.time?'set':''}">${p.time?p.time:p.hour!=null?hourName(p.hour)+' '+HOURS[p.hour][1]:'未填'}</span></button>
+    <button class="srow" data-place>出生地 <span class="${p.place?'set':''}">${p.place?p.place.n+(p.place.off!=null?` · UTC${p.place.off>=0?'+':''}${p.place.off}`:''):'未填（按北京时间）'}</span></button>
+    ${p.place&&p.time?`<button class="srow" data-tst>真太阳时校正 <span class="set">${p.tst!==false?'开':'关'}</span></button>`:''}
+    ${p.birth&&(()=>{try{const [y,m,d]=p.birth.split('-').map(Number);return X.Solar.fromYmd(y,m,d).getLunar().getMonth()<0}catch(e){return false}})()?`<div class="srow" style="cursor:default;display:block">闰月出生 · 紫微怎么排<div class="segs" style="margin-top:8px">${[['half','前半月本月，后半月下月'],['this','整月按本月'],['next','整月按下月']].map(([k,t])=>`<button type="button" class="chip plain" data-leap="${k}" aria-pressed="${(p.leap||'half')===k}">${t}</button>`).join('')}</div></div>`:''}
+    <p class="hint">八字要出生日期；紫微斗数要出生日期、时间和性别。海外出生请填出生地：年柱、月柱按出生时刻对应的北京时间定节气，日柱、时柱按出生地时间；填了精确时间还会按经度做真太阳时校正。只保存在这台设备的浏览器里。${p.birth||p.gender||p.hour!=null||p.time||p.place||p.name?' <button class="badge" data-clearp style="cursor:pointer">清除个人信息</button>':''}</p>
   </div>
   <h3>主题色</h3><div class="pals">${Object.entries(PALETTES).map(([k,q])=>`<button class="pal" data-pal="${k}" aria-pressed="${S.palette===k}"><i style="background:linear-gradient(135deg,hsl(${q.h} ${q.s}% 94%) 50%,hsl(${q.h} ${(q.s*.78).toFixed(1)}% ${q.a}%) 50%)"></i>${q.n}</button>`).join('')}</div>
   <h3>日记字体</h3><div class="fonts">${Object.entries(FONTS).map(([k,f])=>`<button class="fopt" data-font="${k}" aria-pressed="${S.font===k}"><span><b style="font-family:${f.f.replace(/"/g,"'")}">今天的云是粉色的</b><span>${f.d}</span></span><em>${S.font===k?'使用中':''}</em></button>`).join('')}</div>
@@ -878,7 +986,10 @@ $('#settings').addEventListener('click',e=>{if(e.target.closest('.addf'))return;
   if(b.hasAttribute('data-close')){$('#settings').hidden=true;return}
   if(d.gender){S.profile.gender=S.profile.gender===d.gender?undefined:d.gender}
   else if(b.hasAttribute('data-birth')){datePicker({title:'出生日期',value:S.profile.birth,max:todayStr(),quick:false,startYears:!S.profile.birth,onPick:v=>{S.profile.birth=v;saveS();rerenderSettings()}});return}
-  else if(b.hasAttribute('data-hour')){hourPicker(v=>{S.profile.hour=v;saveS();rerenderSettings()});return}
+  else if(b.hasAttribute('data-hour')){hourPicker(v=>{S.profile.hour=v.hour;S.profile.time=v.time;saveS();rerenderSettings()});return}
+  else if(b.hasAttribute('data-place')){placePicker(v=>{S.profile.place=v;saveS();rerenderSettings()});return}
+  else if(b.hasAttribute('data-tst')){S.profile.tst=S.profile.tst===false}
+  else if(d.leap){S.profile.leap=d.leap}
   else if(b.hasAttribute('data-clearp')){S.profile={};toast('个人信息已清除')}
   else if(d.hang){S.hang=d.hang;applyDeco();clack(0,.08)}
   else if(d.sill){S.sill=d.sill;applyDeco();clack(0,.08)}
@@ -925,8 +1036,8 @@ function specHTML(){
    <li><b>今日黄历</b>：宜忌、值神（黄道/黑道）、建除十二值星、二十八宿、冲煞、彭祖百忌、喜神福神财神方位。</li>
    <li>每张签都写明依据；释义里的“通行释义”是今人常用的概括，不是古籍原文。</li>
   </ul>
-  <h3>开源库与数据</h3>
-  <ul><li>lunar-javascript（MIT）：农历、节气、八字、黄历</li><li>iztro（MIT）：紫微斗数排盘</li><li>liuren-ts-lib（Apache-2.0，依赖 tyme4ts，MIT）：大六壬排盘</li><li>《周易》卦爻辞文本取自 @freizl/yijing（MIT）；《梅花易数》原文条目取自 opencode-tianji 数据（MIT）</li></ul>
+  <h3>开源库与数据（均可免费商用）</h3>
+  <ul><li>lunar-javascript（MIT）：农历、节气、八字、黄历</li><li>iztro（MIT，内含 lunar-typescript、lunar-lite、i18next、dayjs，均为 MIT）：紫微斗数排盘</li><li>liuren-ts-lib（Apache-2.0，内含 tyme4ts，MIT）：大六壬排盘</li><li>《周易》卦爻辞取自 @freizl/yijing（MIT），已与另外两个独立版本逐条校勘并改正 7 处错误；《梅花易数》原文取自 opencode-tianji 数据（MIT），已与劝学网全文逐字核对</li><li>小六壬歌诀按四个通行本互校，取多数本用字，分歧处注明异文</li></ul>
   <h3>抽签动效时序</h3>
   <div class="tbl"><table><tr><th>阶段</th><th>时长</th><th>做什么</th></tr>
   <tr><td>按下</td><td>120ms</td><td>签筒压扁，所有签上抬 8px</td></tr>
