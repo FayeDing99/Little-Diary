@@ -464,7 +464,7 @@ SOFTWARE.
 
 ## 字体（SIL Open Font License 1.1）
 
-站酷小薇 ZCOOL XiaoWei、龙藏体 Long Cang、思源宋体 Noto Serif SC、思源黑体 Noto Sans SC、Instrument Serif，均通过 Google Fonts 在线加载，授权全文见 https://openfontlicense.org 。OFL 允许免费商用、嵌入和修改，不允许单独售卖字体文件。
+站酷小薇 ZCOOL XiaoWei、龙藏体 Long Cang、思源宋体 Noto Serif SC、思源黑体 Noto Sans SC、Lora，均通过 Google Fonts 在线加载，授权全文见 https://openfontlicense.org 。OFL 允许免费商用、嵌入和修改，不允许单独售卖字体文件。
 
 ## 古籍原文
 

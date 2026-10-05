@@ -28,6 +28,9 @@ python3 -m http.server 8000
 | `index.html` | 页面结构和全部样式 |
 | `js/app.js` | 全部交互逻辑：签筒动画、写日记、导入、设置、玄学签起课 |
 | `js/xdata.js` | 《周易》六十四卦卦爻辞、《梅花易数》占断原文 |
+| `js/quotes.js` | 好句签句库：句子、全文、释义、时令 |
+| `icons/` | 应用图标：浅色、深色两套，SVG 和 120/144/180/512/1024 PNG |
+| `manifest.webmanifest` | 添加到手机主屏时用的名称和图标 |
 | `js/vendor.js` | 三个排盘库打包后的文件（自动生成，不要手改） |
 | `vendor-src/` | 重新生成 `js/vendor.js` 的入口和依赖清单 |
 
@@ -50,7 +53,7 @@ npm run build
 | liuren-ts-lib（内含 tyme4ts） | 大六壬排盘 | Apache-2.0（tyme4ts 为 MIT） |
 | @freizl/yijing | 《周易》卦爻辞文本（已校勘修正） | MIT |
 | opencode-tianji 数据 | 《梅花易数》原文条目 | MIT |
-| 站酷小薇、思源宋体、思源黑体、龙藏体、Instrument Serif | 字体（Google Fonts 在线加载） | SIL OFL 1.1 |
+| 站酷小薇、思源宋体、思源黑体、龙藏体、Lora | 字体（Google Fonts 在线加载） | SIL OFL 1.1 |
 
 MIT 和 Apache-2.0 都允许商用、修改、闭源发布，条件是保留原作者的版权和授权声明，所以授权全文都放在 `THIRD_PARTY_LICENSES.md`，上线小程序或 App 时把它一起带上，或者做进「关于」页。古籍原文属于公有领域。
 

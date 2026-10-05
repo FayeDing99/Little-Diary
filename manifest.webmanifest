@@ -1,0 +1,41 @@
+{
+  "name": "小日记 Little Diary",
+  "short_name": "小日记",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#FFFBFB",
+  "theme_color": "#FFFBFB",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "icons/xiaoriji-icon-light-120.png",
+      "sizes": "120x120",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/xiaoriji-icon-light-144.png",
+      "sizes": "144x144",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/xiaoriji-icon-light-180.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/xiaoriji-icon-light-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/xiaoriji-icon-light-1024.png",
+      "sizes": "1024x1024",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/xiaoriji-icon-light.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
