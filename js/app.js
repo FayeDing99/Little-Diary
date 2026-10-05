@@ -129,6 +129,12 @@ function cupParts(style){
     <circle cx="80" cy="76" r="25" fill="var(--paper)" stroke="var(--accent)" stroke-width="1.2"/>
     <g stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round"><path d="M68 66h24M68 74h9M83 74h9M68 82h24"/></g>
     <text x="80" y="98" text-anchor="middle" font-size="9" fill="var(--ink-2)" style="font-family:var(--f-classic);letter-spacing:2px">卜 筮</text>`};
+  if(style==='book') return {back:'<ellipse cx="80" cy="16" rx="64" ry="10" fill="var(--cup-in)" stroke="var(--line-strong)" stroke-width="1.4"/>',front:`
+    <path d="M16 16A64 10 0 0 0 144 16V134Q144 146 132 146H28Q16 146 16 134Z" fill="var(--paper)" stroke="var(--line-strong)" stroke-width="1.4"/>
+    <g fill="none" stroke="var(--line)" stroke-width="1.2"><path d="M34 30V138M46 31V139M114 31V139M126 30V138"/></g>
+    <path d="M16 30A64 10 0 0 0 144 30" fill="none" stroke="var(--blush-2)" stroke-width="3" stroke-linecap="round"/>
+    <path d="M62 52h36v58l-18-10-18 10Z" fill="var(--blush)" stroke="var(--accent)" stroke-width="1.3" stroke-linejoin="round"/>
+    <g font-size="14" fill="var(--accent)" text-anchor="middle" style="font-family:var(--f-display)"><text x="80" y="72">好</text><text x="80" y="90">句</text></g>`};
   if(style==='wood') return {back:'<ellipse cx="80" cy="14" rx="70" ry="11" fill="var(--cup-in)" stroke="var(--line-strong)" stroke-width="1.4"/>',front:`
     <path d="M10 14A70 11 0 0 0 150 14V136A70 11 0 0 1 10 136Z" fill="var(--wood)" stroke="var(--line-strong)" stroke-width="1.4"/>
     <path d="M38 30C36 60 38 100 36 140M78 33C80 70 76 110 79 146M120 30C122 64 118 104 121 141" fill="none" stroke="var(--stick-line)" stroke-width="1" opacity=".7"/>
@@ -147,7 +153,8 @@ function cupParts(style){
     <path d="M15 52Q80 66 145 52" fill="none" stroke="var(--blush-2)" stroke-width="3" stroke-linecap="round"/>
     <g font-size="15" fill="var(--ink-2)" text-anchor="middle" style="font-family:var(--f-display)"><text x="80" y="82">小</text><text x="80" y="98">日</text><text x="80" y="114">记</text></g>`};
 }
-function applyCup(){const p=cupParts(mode==='oracle'?'oracle':S.cup);$('#cupBack').innerHTML=p.back;$('#cupFront').innerHTML=p.front}
+const styleOf=m=>m==='oracle'?'oracle':m==='quote'?'book':S.cup;
+function applyCup(){const p=cupParts(styleOf(mode));$('#cupBack').innerHTML=p.back;$('#cupFront').innerHTML=p.front}
 
 /* ---------- sound & haptics ---------- */
 let actx,noise;
@@ -324,13 +331,15 @@ function chipRow(el,label,dict,get,set,kind){
 }
 function renderFilters(){
   const M=MOODS(),W=WEATHER();
-  $('#moodRow').hidden=$('#weatherRow').hidden=mode!=='diary';$('#oracleRow').hidden=mode==='diary';
+  $('#moodRow').hidden=$('#weatherRow').hidden=mode!=='diary';$('#oracleRow').hidden=mode!=='oracle';$('#quoteRow').hidden=$('#quoteRow2').hidden=mode!=='quote';
+  renderQuoteRows();
   chipRow($('#moodRow'),'心情',M,()=>filters.mood,v=>filters.mood=v,'mood');
   chipRow($('#weatherRow'),'天气',W,()=>filters.weather,v=>filters.weather=v,'weather');
   $('#oracleRow').innerHTML=Object.entries(METHODS).map(([k,m])=>`<button class="mopt" data-k="${k}" aria-pressed="${S.method===k}"><b>${m.n}</b><span>${m.need}</span></button>`).join('');
   $('#oracleRow').onclick=e=>{const b=e.target.closest('.mopt');if(!b||busy||b.dataset.k===S.method)return;setMethod(b.dataset.k)};
   if(mode==='diary'){$('#fLab').textContent='筛选';$('#fSum').textContent=(filters.mood&&M[filters.mood]?M[filters.mood].t:'全部心情')+' · '+(filters.weather&&W[filters.weather]?W[filters.weather].t:'全部天气')}
-  else{$('#fLab').textContent='签种';$('#fSum').textContent=METHODS[S.method].n}
+  else if(mode==='oracle'){$('#fLab').textContent='签种';$('#fSum').textContent=METHODS[S.method].n}
+  else{$('#fLab').textContent='筛选';$('#fSum').textContent=(qf.cat?QCAT[qf.cat]:'全部心情')+' · '+(qf.jie==='today'?'应景':qf.jie||'不限时令')}
 }
 async function setMethod(k){S.method=k;saveS();renderFilters();closeFilter();clack(0,.1);await restick()}
 function closeFilter(){const p=$('#fPanel');p.hidden=true;$('#fBtn').setAttribute('aria-expanded','false');p.querySelector('.addf')?.remove()}
@@ -341,13 +350,15 @@ const pool=()=>entries.filter(e=>(!filters.mood||e.moods.includes(filters.mood))
 
 /* ---------- cup: render, rain, swap ---------- */
 const cup=$('#cup');
-function hintHTML(){ if(mode==='oracle') return `${METHODS[S.method].n} · 今天抽了 <b>${drawn.n}</b> 支 · 点签筒起课`;
+function hintHTML(){ if(mode==='quote'){const n=qPool().length,sn=seasonNow();return n?`${qf.jie==='today'?`应景 · ${sn.label} · `:qf.jie?`${qf.jie} · `:''}签筒里 <b>${n}</b> 句 · 今天抽了 <b>${drawn.n}</b> 支 · 点一下摇签`:''}
+  if(mode==='oracle') return `${METHODS[S.method].n} · 今天抽了 <b>${drawn.n}</b> 支 · 点签筒起课`;
   const n=pool().length; return n?`签筒里 <b>${n}</b> 支 · 今天抽了 <b>${drawn.n}</b> 支 · 点一下摇签`:'' }
 function renderCup(animate){
   const box=$('#sticks'); box.innerHTML='';
   let show;
   if(mode==='oracle'){show=Array.from({length:13},(_,i)=>({id:'o'+i,_tip:METHODS[S.method].tip}));$('#emptyCup').hidden=true}
-  else{const p=pool();$('#emptyCup').hidden=p.length>0;show=p.slice().sort(()=>Math.random()-.5).slice(0,13);
+  else if(mode==='quote'){const p=qPool();$('#emptyCup').hidden=p.length>0;$('#emptyCup').innerHTML='这个组合还没有句子<br>换个心情试试';show=p.slice().sort(()=>Math.random()-.5).slice(0,13).map(q=>({id:q.id,_tip:QTIP[q.src]}))}
+  else{const p=pool();$('#emptyCup').hidden=p.length>0;$('#emptyCup').innerHTML='这个组合还没有日记<br>换个心情试试';show=p.slice().sort(()=>Math.random()-.5).slice(0,13);
     if(pendingDrop&&p.find(e=>e.id===pendingDrop)&&!show.find(e=>e.id===pendingDrop))show[0]=p.find(e=>e.id===pendingDrop)}
   const n=show.length;
   show.forEach((e,i)=>{
@@ -369,29 +380,43 @@ async function rain(){
   setTimeout(()=>{buzz(15);cup.animate([{transform:'none'},{transform:'translateY(5px) scale(1.04,.95)'},{transform:'none'}],{duration:260,easing:'ease-out'})},ss.length*step+dur*.6);
   await Promise.all(ps)}
 async function restick(){busy=true;try{await flyOut();renderCup(false);await rain()}finally{busy=false}}
-async function swapCup(){
-  busy=true;try{await swapInner()}finally{busy=false}}
-async function swapInner(){
-  closeFilter();
-  await flyOut();
-  await cup.animate([{transform:'none',opacity:1},{transform:'translateX(-150%) rotate(-16deg)',opacity:0}],{duration:340*T,easing:'cubic-bezier(.5,0,.8,.4)',fill:'forwards'}).finished.catch(()=>{});
-  $('#sticks').innerHTML='';applyCup();renderFilters();
-  await cup.animate([{transform:'translateX(150%) rotate(16deg)',opacity:0},{transform:'translateX(-6%) rotate(-4deg)',opacity:1,offset:.7},{transform:'none',opacity:1}],{duration:460*T,easing:'cubic-bezier(.2,.8,.3,1)',fill:'forwards'}).finished.catch(()=>{});
-  cup.getAnimations().forEach(a=>a.cancel());
-  renderCup(false);await rain()}
 function idle(){ if(busy||$('#v-draw').hidden||!$('#ov').hidden||!$('#bs').hidden)return; const ss=[...document.querySelectorAll('.stick')]; if(!ss.length)return; const s=rnd(ss),r=+s.dataset.r;
   s.animate([{transform:`rotate(${r}deg)`},{transform:`translateY(-10px) rotate(${r+3}deg)`},{transform:`translateY(-2px) rotate(${r-2}deg)`},{transform:`rotate(${r}deg)`}],{duration:620,easing:'ease-in-out'});}
 if(!RM) setInterval(idle,4000);
 
-function setMode(m){mode=m;$('#seg').dataset.m=m;$('#seg').querySelectorAll('button').forEach(x=>x.setAttribute('aria-selected',x.dataset.m===m));cup.setAttribute('aria-label',m==='diary'?'摇签筒，抽一篇日记':'摇签筒，起课')}
-$('#seg').onclick=e=>{const b=e.target.closest('button');if(!b||busy||b.dataset.m===mode)return;setMode(b.dataset.m);clack(0,.12);buzz(10);swapCup()};
+function setMode(m){mode=m;$('#seg').dataset.m=m;$('#seg').querySelectorAll('button').forEach(x=>x.setAttribute('aria-selected',x.dataset.m===m));cup.setAttribute('aria-label',m==='diary'?'摇签筒，抽一篇日记':m==='oracle'?'摇签筒，起课':'摇签筒，抽一句好句')}
+/* ---- 签筒切换：3D 转盘 ---- */
+const MODES=['diary','oracle','quote'];
+const nbMode=d=>MODES[(MODES.indexOf(mode)+d+3)%3];
+const cfMain=$('#cfMain'),cfPrev=$('#cfPrev'),cfNext=$('#cfNext');
+function ghostHTML(m){const p=cupParts(styleOf(m));return `<div class="cup-wrap"><svg class="cup-back" viewBox="0 0 160 150" aria-hidden="true">${p.back}</svg><div class="sticks"></div><svg class="cup-front" viewBox="0 0 160 150" aria-hidden="true">${p.front}</svg><span class="cup-shadow"></span></div>`}
+function prepGhosts(){cfPrev.innerHTML=ghostHTML(nbMode(-1));cfNext.innerHTML=ghostHTML(nbMode(1))}
+function layout(p){[[cfPrev,-1],[cfMain,0],[cfNext,1]].forEach(([el,d])=>{const e=d+p,a=Math.abs(e);
+  el.style.transform=a<.001?'':`translateX(${e*112}px) translateZ(${-a*180}px) rotateY(${-e*58}deg)`;
+  el.style.opacity=d===0?Math.max(0,1-a*.85):Math.max(0,Math.min(1,(1-a)*1.25));el.style.zIndex=String(10-Math.round(a*5))})}
+const ease=(k,t)=>k==='back'?1+2.2*Math.pow(t-1,3)+1.2*Math.pow(t-1,2):1-Math.pow(1-t,3);
+function tweenLayout(a,b,dur,k){return new Promise(res=>{const t0=performance.now(),D=Math.max(1,dur*T);const step=now=>{const t=Math.min(1,(now-t0)/D);layout(a+(b-a)*ease(k,t));if(t<1)requestAnimationFrame(step);else res()};requestAnimationFrame(step)})}
+async function goMode(dir,from=0){if(busy&&from===0)return;busy=true;try{closeFilter();release();prepGhosts();swish();buzz(10);clack(.05,.1);
+  await tweenLayout(from,-dir,560,'back');
+  setMode(nbMode(dir));applyCup();$('#sticks').innerHTML='';renderFilters();layout(0);prepGhosts();
+  renderCup(false);await rain()}finally{busy=false}}
+$('#seg').onclick=e=>{const b=e.target.closest('button');if(!b||busy||b.dataset.m===mode)return;const d=(MODES.indexOf(b.dataset.m)-MODES.indexOf(mode)+3)%3;goMode(d===1?1:-1)};
+let sw=null,swiped=false;const area=$('.cup-area');
+area.addEventListener('pointerdown',e=>{if(busy||!$('#ov').hidden||e.button>0)return;sw={x:e.clientX,y:e.clientY,t:performance.now(),on:false,p:0,id:e.pointerId}});
+area.addEventListener('pointermove',e=>{if(!sw)return;const dx=e.clientX-sw.x,dy=e.clientY-sw.y;
+  if(!sw.on){if(Math.abs(dx)>12&&Math.abs(dx)>Math.abs(dy)*1.3){sw.on=true;busy=true;release();prepGhosts();try{area.setPointerCapture(sw.id)}catch(_){}}else return}
+  sw.p=Math.max(-1.15,Math.min(1.15,dx/210));layout(sw.p)});
+const endSw=async e=>{if(!sw)return;const s=sw;sw=null;if(!s.on)return;swiped=true;setTimeout(()=>swiped=false,80);
+  const v=(e.clientX-s.x)/Math.max(1,performance.now()-s.t);
+  if(Math.abs(s.p)>.28||Math.abs(v)>.55){await goMode(s.p<0?1:-1,s.p)}else{await tweenLayout(s.p,0,300,'out');busy=false}};
+area.addEventListener('pointerup',endSw);area.addEventListener('pointercancel',endSw);
 
-const canDraw=()=>mode==='oracle'||pool().length>0;
+const canDraw=()=>mode==='oracle'||(mode==='quote'?qPool().length>0:pool().length>0);
 cup.addEventListener('pointerdown',()=>{ if(busy||!canDraw())return; ac(); cup.animate([{transform:'none'},{transform:'translateY(5px) scale(1.04,.95)'}],{duration:120,easing:'ease-out',fill:'forwards'});
   document.querySelectorAll('.stick').forEach(s=>s.animate([{transform:`rotate(${s.dataset.r}deg)`},{transform:`translateY(-8px) rotate(${s.dataset.r}deg)`}],{duration:140,fill:'forwards',easing:'ease-out'}));});
 const release=()=>{ if(busy)return; cup.getAnimations().forEach(a=>a.cancel()); document.querySelectorAll('.stick').forEach(s=>s.getAnimations().forEach(a=>a.cancel())); };
 cup.addEventListener('pointerleave',release);cup.addEventListener('pointercancel',release);
-cup.addEventListener('click',()=>{ if(busy)return; if(mode==='oracle'){release();askOracle()} else drawDiary() });
+cup.addEventListener('click',()=>{ if(busy||swiped)return; if(mode==='oracle'){release();askOracle()} else if(mode==='quote')drawQuote(); else drawDiary() });
 
 function drawDiary(){
   const p=pool(); if(!p.length)return;
@@ -400,6 +425,57 @@ function drawDiary(){
   const sticks=[...document.querySelectorAll('.stick')];let el=sticks.find(s=>s.dataset.id===chosen.id); if(!el){el=rnd(sticks);el.dataset.id=chosen.id}
   shakeAndOpen(el,tipOf(chosen),{html:cardHTML(chosen),stamp:stampFor(chosen)});
 }
+/* ---------- 好句签 ---------- */
+const QCAT={happy:'同乐',calm:'静好',down:'打气',angry:'消气',moved:'温柔',tired:'歇一歇'};
+const QSRC={gu:['古典',.6],xian:['现代',.2],wai:['外国',.2]};
+const QTIP={gu:'var(--accent)',xian:'var(--blush-2)',wai:'var(--line-strong)'};
+let qf=Object.assign({cat:null,jie:null},ls.get(KEY+'.qf')||{});if(qf.season){qf.jie='today';delete qf.season}
+const JIE_CHIPS=['春','夏','秋','冬','春节','元宵','清明','端午','七夕','中秋','重阳','冬至'];
+const QS=()=>window.QUOTES||[];
+const JQ_ORDER=['立春','雨水','惊蛰','春分','清明','谷雨','立夏','小满','芒种','夏至','小暑','大暑','立秋','处暑','白露','秋分','寒露','霜降','立冬','小雪','大雪','冬至','小寒','大寒'];
+const JQ_PY={DONG_ZHI:'冬至',XIAO_HAN:'小寒',DA_HAN:'大寒',LI_CHUN:'立春',YU_SHUI:'雨水',JING_ZHE:'惊蛰'};
+function seasonNow(){const L=nowLunar(),S0=X.Solar.fromDate(new Date());
+  let jq=L.getJieQi()||(L.getPrevJieQi(true)?L.getPrevJieQi(true).getName():'');jq=JQ_PY[jq]||jq;
+  const i=JQ_ORDER.indexOf(jq),season=i<0?'':['春','夏','秋','冬'][Math.floor(i/6)];
+  const fest=[...L.getFestivals(),...S0.getFestivals()].map(x=>x.replace(/节$/,''));
+  if(L.getJieQi()==='清明'||jq==='清明')fest.push('清明');
+  return{jq,season,fest,label:[...fest,jq].filter(Boolean).join(' · ')||season}}
+function qPool(){let p=QS().filter(q=>!qf.cat||q.cat.includes(qf.cat));
+  if(qf.jie&&qf.jie!=='today'){const j=qf.jie,si=['春','夏','秋','冬'].indexOf(j);p=p.filter(q=>(q.jie||[]).some(x=>x===j||(si>=0&&Math.floor(JQ_ORDER.indexOf(x)/6)===si&&JQ_ORDER.indexOf(x)>=0)))}
+  else if(qf.jie==='today'){const sn=seasonNow(),hit=q=>(q.jie||[]),strong=p.filter(q=>hit(q).some(j=>sn.fest.includes(j)||j===sn.jq));const ids=new Set(strong.map(q=>q.id));p=[...strong,...p.filter(q=>!ids.has(q.id)&&hit(q).includes(sn.season))]}
+  return p}
+function renderQuoteRows(){const r=$('#quoteRow'),r2=$('#quoteRow2');if(!r)return;const sn=seasonNow();
+  r.innerHTML=`<span class="lab">心情</span><button class="chip plain" data-c="" aria-pressed="${!qf.cat}">全部</button>`+Object.entries(QCAT).map(([k,t])=>`<button class="chip plain" data-c="${k}" aria-pressed="${qf.cat===k}">${t}</button>`).join('');
+  r2.innerHTML=`<span class="lab">时令</span><button class="chip plain" data-s="" aria-pressed="${!qf.jie}">不限</button><button class="chip plain" data-s="today" aria-pressed="${qf.jie==='today'}">应景 · ${esc(sn.label)}</button>`+JIE_CHIPS.map(j=>`<button class="chip plain" data-s="${j}" aria-pressed="${qf.jie===j}">${j}</button>`).join('');
+  const on=e=>{const b=e.target.closest('.chip');if(!b||busy)return;if(b.dataset.c!=null)qf.cat=b.dataset.c||null;if(b.dataset.s!=null)qf.jie=b.dataset.s||null;ls.set(KEY+'.qf',qf);renderFilters();clack(0,.08);renderCup(true)};
+  r.onclick=on;r2.onclick=on}
+let qRecent=[];
+function drawQuote(){const p=qPool();if(!p.length)return;
+  const bySrc={};p.forEach(q=>(bySrc[q.src]=bySrc[q.src]||[]).push(q));
+  const srcs=Object.keys(bySrc),tot=srcs.reduce((a,k)=>a+QSRC[k][1],0);let r=Math.random()*tot,src=srcs[0];for(const k of srcs){r-=QSRC[k][1];if(r<=0){src=k;break}}
+  let cand=bySrc[src].filter(q=>!qRecent.includes(q.id));if(!cand.length)cand=bySrc[src];
+  const q=rnd(cand);qRecent.push(q.id);qRecent=qRecent.slice(-Math.min(12,Math.max(0,p.length-1)));
+  const sticks=[...document.querySelectorAll('.stick')];let el=sticks.find(s=>s.dataset.id===q.id);if(!el){el=rnd(sticks);el.dataset.id=q.id}
+  shakeAndOpen(el,QTIP[q.src],{html:quoteHTML(q),stamp:'句'})}
+const strip=t=>t.replace(/[，。！？；：、“”‘’「」『』《》（）\s,.!?;:—…·]/g,'');
+function markLine(line,q){const sl=strip(line),sq=strip(q.line);if(!sl)return '';
+  if(line.includes(q.line))return esc(line).replace(esc(q.line),`<mark>${esc(q.line)}</mark>`);
+  if(sl.length>2&&sq.includes(sl))return `<mark>${esc(line)}</mark>`;return esc(line)}
+const fullBox=(lines,q,en)=>`<div class="qt-full${en?' en':''}">${lines.map(l=>l===''?'<p class="gap"></p>':`<p>${en?esc(l):markLine(l,q)}</p>`).join('')}</div>`;
+function quoteHTML(q){const sn=seasonNow(),jie=(q.jie||[]).filter(j=>sn.fest.includes(j)||j===sn.jq);
+  const by=q.src==='wai'?`${q.author}《${q.title}》`:`${q.era?`〔${q.era}〕`:''}${q.author}《${q.title}》`;
+  const cats=q.cat.map(k=>QCAT[k]).join(' · ');
+  return `<span class="tape"></span>
+   <div class="o-head"><span class="o-title">好句签</span><span class="badge">${QSRC[q.src][0]} · ${cats}</span></div>
+   <div class="qt-line">${esc(q.line)}</div>
+   ${q.orig?`<div class="qt-orig">${esc(q.orig)}</div>`:''}
+   <div class="qt-by">—— ${esc(by)}${jie.length?`<span class="qt-season">应景 · ${jie.join(' · ')}</span>`:''}</div>
+   ${q.full?`<div class="sec"><h4>${q.src==='wai'?'全诗':'全文'}</h4>${fullBox(q.full,q)}${q.origFull?fullBox(q.origFull,q,true):''}</div>`:''}
+   ${!q.full&&q.ctx?`<div class="sec"><h4>上下文</h4><div class="qt-full"><p>${markLine(q.ctx,q)}</p></div>${q.ctxOrig?fullBox(q.ctxOrig,q,true):''}</div>`:''}
+   <div class="sec"><h4>释义</h4><p class="qt-yi">${esc(q.yi)}</p>${q.note?`<p class="gloss" style="margin:6px 0 0">异文：${esc(q.note)}</p>`:''}</div>
+   ${q.jie&&q.jie.length?`<div class="ask">时令：${q.jie.join('、')}</div>`:''}
+   <div class="n-foot"><span>${q.src==='wai'?'原文已进入公有领域，中文为本程序自译':q.src==='xian'?'作者去世已逾 50 年，作品在中国大陆已进入公有领域':'全文以 chinese-poetry 为底本校字'}${q.check?`；核对：${esc(q.check)}`:''}</span><span class="badge">好句</span></div>`}
+
 async function shakeAndOpen(el,tip,content){
   if(busy)return; busy=true;
   cup.getAnimations().forEach(a=>a.cancel());
@@ -533,6 +609,12 @@ const XLR_Q={综合:null,失物:/失物/,行人:/行人|去者/,求财:/求财|�
 function xlrPlain(i,q){const P=XLR_PLAIN[i],g=XLR[i];let t=`<p>落在<b>${g.n}</b>，${g.j}。${P.综合}</p>`;
   if(q&&q!=='综合')t=`<p>问${q}：<b>${P[q]}</b></p>`+t;
   else t+=`<p class="sub">${['失物','行人','求财','疾病'].map(k=>k+'：'+P[k]).join(' ')}</p>`;return t}
+const XLR_YQ=['一、五、七','二、八、十','三、六、九','四、七、十','一、五、七','三、六、九'];
+const XLR_PACE=[['「行人身未动」','人还没动身，要再等一等'],['「去者未回程」','还在拖着，会比预想的晚'],['「行人有音信」','很快会有消息'],['「行人有惊慌」','路上可能有些波折'],['「行人立便至」','很快就到'],['「行人有灾殃」','行程不太稳，不容易如期']];
+const XLR_PACE_G=['大安主安稳，事情不急，按部就班地来','留连主拖延，会比预想的慢','速喜主快，消息来得快','赤口主口舌，中途可能有波折','小吉主和合，进展顺','空亡主落空，时间不好定'];
+function xlrWhen(i,o){const u=UNIT(o.qp),tr=o.q==='行人';
+  return yqBox(`<p>结果宫是<b>${XLR[i].n}</b>，口诀里它的应期数是<b>${XLR_YQ[i]}</b>。${o.qp.day?`你已经说了是${o.qp.day}，这几个数在这里参考意义不大，可以主要看快慢。`:o.qp.span==='mid'?`如果是几天内的事，可以看作第${XLR_YQ[i]}天前后；如果是几个月的事，就是${XLR_YQ[i]}个月前后。`:`你问的事${o.qp.span==='near'?'比较近':'比较长远'}，可以看作${XLR_YQ[i]}${u[0]}前后。`}</p><p>快慢：${tr?`歌诀说${XLR_PACE[i][0]}，${XLR_PACE[i][1]}。`:`按本宫通论，${XLR_PACE_G[i]}。`}</p>`,
+   `应期数出自小六壬口诀「凡谋事一五七」等（天玉宫、vocus 两处一致）。两处都没写单位，按事情远近读成天、月或年（${u[1]}），这是本程序的读法。`)}
 function castXLR(o){
   const L=nowLunar();let steps;
   if(o.how==='num'){const [a,b,c]=o.nums;const i1=(a-1)%6,i2=(i1+b-1)%6,i3=(i2+c-1)%6;steps=[[`一数 ${a}`,i1],[`二数 ${b}`,i2],[`三数 ${c}`,i3]]}
@@ -549,17 +631,19 @@ function castXLR(o){
   const trend=vv.every(v=>v[0]>0)?'一路顺':vv.every(v=>v[0]<0)?'一路阻':vv[0][0]<0&&end>0?'先难后易':vv[0][0]>0&&end<0?'先顺后阻':end>0?'结果偏顺':end<0?'结果偏阻':vv[0][0]>0?'前顺后平':vv[0][0]<0?'前阻后平':'平稳';
   const basis=`${steps.map((s,i)=>`${pos[i]}${XLR[s[1]].n}（${vv[i][1]?`「${vv[i][1]}」`:'本宫通论'}，${vt(vv[i][0])} ${f(vv[i][0]*(i===2?2:1))}）`).join(' → ')}；五行：${steps.slice(0,2).map((s,i)=>`${XLR[s[1]].n}${wx[i]}${wxRel[i][0]}（${f(wxRel[i][1])}）`).join('、')}，结果宫${XLR[steps[2][1]].n}属${endWx}。合计 ${f(sc)}，走向${trend}，为${gName(grade)}。<span class="gsrc">各宫对「${o.q}」的吉凶取自歌诀原句，歌诀没专门讲的按本宫通论；三宫读作起因、过程、结果，结果宫记两分；六宫五行取道家、江氏一派（大安木、留连土、速喜火、赤口金、小吉水、空亡土，留连、小吉另有异说）；分值和五行加减是本程序的口径。</span>`;
   const adv=adviceHTML(grade,[...XLR_ADV[steps[2][1]].c,...(grade>=4?[BUGUO]:[])],[...(o.q==='疾病'?[MED]:[]),...(o.q&&o.q!=='综合'?[`问${o.q}：${XLR_PLAIN[steps[2][1]][o.q]}`,XLR_ADV[steps[2][1]].t[0]]:XLR_ADV[steps[2][1]].t),...(trend==='先难后易'?['开头可能不太顺，后面会慢慢转好，可以再坚持一下。']:trend==='先顺后阻'?['开头比较顺，收尾的时候可以多留意一些。']:[]),...(wxRel.some(r=>r[1]<0)?[`前面的${steps.slice(0,2).filter((s,i)=>wxRel[i][1]<0).map(s=>XLR[s[1]].n).join('、')}克结果宫：阻力可能来自${steps.slice(0,2).map((s,i)=>wxRel[i][1]<0?pos[i]:'').filter(Boolean).join('和')}阶段，可以先把那一环理一理。`]:[])]);
-  const verse=g.v.split(/(?<=[，。])/).map(p=>re&&re.test(p)?`<mark>${p}</mark>`:p).join('');
+  const dirRe=o.qp&&o.qp.kind==='where'?/[东南西北坤]方|申未午|南行/:null,dirHit=dirRe&&dirRe.test(g.v),reHit=re&&re.test(g.v);
+  const verse=g.v.split(/(?<=[，。])/).map(p=>(re&&re.test(p))||(dirRe&&dirRe.test(p))?`<mark>${p}</mark>`:p).join('');
   const html=`<span class="tape"></span>
    <div class="o-head"><span class="o-title">小六壬</span><span class="badge">${o.how==='num'?'报数起课':'时间起课'}</span></div>
    <div class="o-meta">${todayStr().replace(/-/g,'.')} · ${lunarStamp(L)}</div>
    <div class="path">${steps.map((s,i)=>`${i?'→':''}<small>${s[0]}</small><span class="${i===2?'on':''}">${XLR[s[1]].n}</span>`).join(' ')}</div>
    <div class="o-big">${g.n}${lvl(g.j,g.j==='吉'?'good':'bad')}</div>
+   ${undCard('xlr',o)}
    ${gradeHTML(grade,basis)}
-   ${o.ask?`<div class="ask">所问：<b>${esc(o.ask)}</b></div>`:''}
+   ${o.qp&&o.qp.kind==='when'?xlrWhen(steps[2][1],o):''}
    ${arrange(grade,plainBox(xlrPlain(steps[2][1],o.q)),adv)}
    <div class="verse">${verse}</div>
-   ${re?`<div class="ask">已标出与「${o.q}」相关的句子。</div>`:''}
+   ${reHit||dirHit?`<div class="ask">已标出${reHit?`与「${o.q}」相关`:''}${reHit&&dirHit?'和':''}${dirHit?'讲方位':''}的句子。</div>`:''}${dirRe&&!dirHit?`<div class="ask">${g.n}这一宫的歌诀没有讲方位。</div>`:''}
    <div class="ask">异文：${g.alt}</div>
    <div class="sec"><h4>起课规则</h4><p>${o.how==='num'?'从大安起数第一个数，落宫处起数第二个数，再起数第三个数，顺数六宫（大安、留连、速喜、赤口、小吉、空亡）。':'正月起大安，月上起日，日上起时，顺数六宫（大安、留连、速喜、赤口、小吉、空亡）。'}末宫即所得。</p></div>
    <div class="n-foot"><span>歌诀按多个通行本互校，取多数本用字</span><span class="badge">小六壬</span></div>`;
@@ -597,12 +681,34 @@ const yaoCi=t=>{let v=0;const tags=[];const h=(re,n,x)=>{if(re.test(t)){v+=x;tag
   h(/元吉|大吉/,'元吉',1)||h(/吉/,'吉',1);h(/凶/,'凶',-1);h(/[厉厲]/,'厉',-.5);h(/吝/,'吝',-.5);h(/悔亡/,'悔亡',.5)||h(/悔/,'悔',-.5);h(/[无無]咎/,'无咎',.5);h(/[无無]攸利/,'无攸利',-.5)||h(/[无無]不利/,'无不利',.5);
   return{v:Math.max(-1,Math.min(1,v)),tags}};
 const MH_CATS=['人事','求谋','求财','求名','交易','出行','行人','谒见','失物','婚姻','家宅','疾病','天时','饮食'];
+const WX_GZ={金:['庚辛','申酉'],木:['甲乙','寅卯'],水:['壬癸','亥子'],火:['丙丁','巳午'],土:['戊己','辰戌丑未']};
+const GUA_POS={乾:'戌亥',坎:'子',艮:'丑寅',震:'卯',巽:'辰巳',离:'午',坤:'未申',兑:'酉'};
+function mhWhen(ti,o,trend,isTS,rel){const wx=TRI_WX[ti],[gs,zs]=WX_GZ[wx],pos=GUA_POS[ti],zAll=[...new Set((zs+pos).split(''))].join('');
+  const hit=gz=>gs.includes(gz[0])||zAll.includes(gz[1]);let list='';
+  if(o.qp.span==='far'){const out=[],t=new Date();let last='';for(let i=1;i<=420&&out.length<3;i++){const d=new Date(t.getFullYear(),t.getMonth(),t.getDate()+i,12);const mg=X.Solar.fromDate(d).getLunar().getMonthInGanZhiExact();if(mg!==last){last=mg;if(hit(mg))out.push(`<li><b>${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日起</b>的${mg}月</li>`)}}
+    list=`<p>你问的事比较长远，按月看。接下来对得上的月份（按节气分月）：</p><ul class="dlist">${out.join('')}</ul>`}
+  else if(o.qp.day)list=`<p>你已经说了是${o.qp.day}，就不往后列日子了。</p>`;
+  else{const ds=nextDays(Ld=>hit(Ld.getDayInGanZhi()),3,30);list=`<p>接下来对得上的日子：</p><ul class="dlist">${ds.map(x=>`<li><b>${md(x.d)}</b> ${x.L.getDayInGanZhi()}日</li>`).join('')}</ul>`}
+  const cp=CAT_PLAIN[o.q]&&(o.q==='行人'||o.q==='出行')?`<p>${o.q==='行人'?'快慢：':''}原书占${o.q}，${rel}是「${CAT_PLAIN[o.q][REL_IDX[rel]]}」。</p>`:'';
+  return yqBox(`<p>先天起卦看卦气。体卦是<b>${ti}</b>，属${wx}，后天方位在${pos}。所以应期多落在天干${gs.split('').join('、')}，或地支${zAll.split('').join('、')}的${o.qp.span==='far'?'月或日':'日子'}。</p>${list}${cp}${isTS?'':`<p>走向是<b>${trend}</b>，${/后吉|偏吉/.test(trend)?'等到的时候，多半是好消息':'就算到了那个时候，也可能不如预期，可以多准备一手'}。</p>`}`,
+   `「先天起卦看卦气、后天起卦看卦数」是今人的说法，书上举例「乾属金，应在庚辛日或申酉日，或戌亥日」。只查到两篇几乎相同的文章，可能同出一源；看哪一卦也说法不一，这里取代表你的体卦。<span class="tagx">来源不足</span>`)}
+const ZHI_ORDER='子丑寅卯辰巳午未申酉戌亥';
+function dlrWhen(r,di,kong,YS,hits){const bz=di.bazi.split(' '),yz=bz[0][1],mz=bz[1][1],dz=bz[2][1],c0=r.sanChuan.chuChuan[0],mo=r.sanChuan.moChuan[0];const ps=[];
+  if(c0===yz)ps.push(`发用（初传）${c0}就是太岁（今年年支），应在<b>一年之内</b>。`);
+  else if(c0===mz)ps.push(`发用（初传）${c0}就是月建（本月月支），应在<b>一个月之内</b>。`);
+  else if(c0===dz)ps.push(`发用（初传）${c0}就是今天的日支，应在<b>当天</b>。`);
+  const empt=[...new Set([...(YS?hits.map(i=>[r.sanChuan.chuChuan,r.sanChuan.zhongChuan,r.sanChuan.moChuan][i][0]):[]),mo].filter(z=>kong.includes(z)))];
+  let single='';
+  if(empt.length){const out=nextDays(Ld=>Ld.getDayInGanZhi()[0]==='甲',1,12)[0];const fill=empt.map(z=>{const x=nextDays(Ld=>Ld.getDayInGanZhi()[1]===z,1,13)[0];return x?`${z}日 ${md(x.d)}`:''}).filter(Boolean);
+    single=`<p>${empt.join('、')}落空亡。空亡要等「出旬」或「填实」才应：出旬是这一旬结束${out?`，即 ${md(out.d)} 起`:''}；填实是遇到同一地支的日子${fill.length?`，即 ${fill.join('、')}`:''}。<span class="tagx">仅一个来源</span></p>`}
+  if(!ps.length&&!empt.length)ps.push('发用不是太岁、月建或日支，三传也没有落空亡，课里没有明确的应期信号。这种时候，通行的说法是看事情远近：远的事应在年月，近的事应在日时。<span class="tagx">仅一个来源</span>');
+  return yqBox(ps.map(x=>`<p>${x}</p>`).join('')+single,'「年月发用，应事在当年月」「用起太岁应在一年之内，用起月建应在一月之内，用起日干日支应在即日」见网易《大六壬的断课思路与步骤》与国学术数馆两处；空亡待出旬、填实，「远应年月，近应日时」只查到国学术数馆一处，标为「仅一个来源」。')}
 function castMH(o){
-  const L=nowLunar(),hz=ZHI.indexOf(L.getTimeZhi())+1;let up,low,mv,how;
+  const L=nowLunar(),hz=ZHI.indexOf(L.getTimeZhi())+1;let up,low,mv,how,total;
   if(o.how==='num'){const [a,b]=o.nums;
-    if(b){up=a%8||8;low=b%8||8;mv=(a+b+hz)%6||6;how=`报两数：${a} 为上卦，${b} 为下卦，${a}+${b}+时数${hz}=${a+b+hz}，除六取动爻`}
-    else{up=a%8||8;low=hz%8||8;mv=(a+hz)%6||6;how=`报一数：${a} 为上卦，时数 ${hz}（${L.getTimeZhi()}）为下卦，${a}+${hz}=${a+hz}，除六取动爻`}}
-  else{const y=ZHI.indexOf(L.getYearZhi())+1,m=Math.abs(L.getMonth()),d=L.getDay(),s=y+m+d;up=s%8||8;low=(s+hz)%8||8;mv=(s+hz)%6||6;
+    if(b){up=a%8||8;low=b%8||8;mv=(a+b+hz)%6||6;total=a+b+hz;how=`报两数：${a} 为上卦，${b} 为下卦，${a}+${b}+时数${hz}=${a+b+hz}，除六取动爻`}
+    else{up=a%8||8;low=hz%8||8;mv=(a+hz)%6||6;total=a+hz;how=`报一数：${a} 为上卦，时数 ${hz}（${L.getTimeZhi()}）为下卦，${a}+${hz}=${a+hz}，除六取动爻`}}
+  else{const y=ZHI.indexOf(L.getYearZhi())+1,m=Math.abs(L.getMonth()),d=L.getDay(),s=y+m+d;up=s%8||8;low=(s+hz)%8||8;mv=(s+hz)%6||6;total=s+hz;
     how=`年支${L.getYearZhi()}(${y}) + ${L.getMonthInChinese()}月(${m}) + ${L.getDayInChinese()}(${d}) = ${s}，除八得上卦；加${L.getTimeZhi()}时(${hz}) = ${s+hz}，除八得下卦，除六得动爻`}
   const U=XT[up],Lo=XT[low],bits=TRI[Lo]+TRI[U];
   const chg=bits.split('');chg[mv-1]=chg[mv-1]==='1'?'0':'1';const bian=chg.join('');const hu=bits.slice(1,4)+bits.slice(2,5);
@@ -640,7 +746,6 @@ function castMH(o){
   const html=`<span class="tape"></span>
    <div class="o-head"><span class="o-title">梅花易数</span><span class="badge">占${o.q}</span></div>
    <div class="o-meta">${todayStr().replace(/-/g,'.')} · ${lunarStamp(L)}</div>
-   ${o.ask?`<div class="ask">所问：<b>${esc(o.ask)}</b></div>`:''}
    <div class="guas">
      <div class="gua main">${hexHTML(bits,mv)}<b>${guaName(bits)}</b>本卦</div>
      <div class="gua">${hexHTML(hu,0)}<b>${guaName(hu)}</b>互卦</div>
@@ -648,7 +753,9 @@ function castMH(o){
      <div class="gua"><b style="font-size:20px">${['初','二','三','四','五','上'][mv-1]}</b>动爻</div>
    </div>
    <div class="o-big" style="font-size:24px">${isTS?'天时不分体用':rel+lvl(relK==='good'?'吉':relK==='bad'?'凶':'耗',relK)}</div>
+   ${undCard('mh',o)}
    ${isTS?'':gradeHTML(grade,basis)}
+   ${o.qp&&o.qp.kind==='when'?mhWhen(ti,o,trend,isTS,rel):''}
    <div class="ask">体卦 <b>${ti}${TRI_WX[ti]}</b>（${season}${tiState}） · 用卦 <b>${yong}${TRI_WX[yong]}</b></div>
    ${arrange(isTS?0:grade,plainBox(isTS?tsTxt+`<p>本卦「${guaName(bits)}」，互卦「${guaName(hu)}」，变卦「${guaName(bian)}」。</p>`:`<p>体卦代表你，用卦代表${o.ask?'「'+esc(o.ask)+'」':'你问的事'}。${ti}属${TRI_WX[ti]}，${yong}属${TRI_WX[yong]}，${REL_PLAIN[rel]}${CAT_PLAIN[o.q]?`占${o.q}具体是：<b>${CAT_PLAIN[o.q][REL_IDX[rel]]}</b>。`:''}${TI_PLAIN[tiState]}</p><p>事情中段看互卦：${rH.map(([x,r])=>`${x}${TRI_WX[x]}${REL2[r][0]}`).join('，')}${rH.some(([x,r])=>r==='克体')?'，中途有阻力':rH.some(([x,r])=>r==='生体')?'，中途有助力':''}。结果看变卦：用卦变成${bianYong}${TRI_WX[bianYong]}，${REL2[rB][0]}，结果${REL2[rB][1]}。合起来是<b>${trend}</b>。</p><p class="sub">本卦「${guaName(bits)}」讲的是${gp(G[0])}；互卦「${guaName(hu)}」：${gp(D.GUA[hu][0])}；变卦「${guaName(bian)}」：${gp(GB[0])}。</p>`),madv)}
    <div class="sec"><h4>占${o.q}</h4>${qline(cat[0],'《梅花易数》'+cat[2].replace('梅花易数·',''))}${cat[1]?`<p style="font-size:12.5px;color:var(--ink-2)">白话：${cat[1]}</p>`:''}</div>
@@ -704,8 +811,9 @@ function castDLR(o){
   const html=`<span class="tape"></span>
    <div class="o-head"><span class="o-title">大六壬</span><span class="badge">${esc(r.sanChuan.keTi||'')}课</span></div>
    <div class="o-meta">${di.bazi} · 月将${di.yuejiang} · ${di.xun}旬 · 空亡${kong.join('')}</div>
+   ${undCard('dlr',o)}
    ${gradeHTML(grade,basis)}
-   ${o.ask?`<div class="ask">所问：<b>${esc(o.ask)}</b></div>`:''}
+   ${o.qp&&o.qp.kind==='when'?dlrWhen(r,di,kong,YS,hits):''}
    ${arrange(grade,plainBox((YS?`<p>问${q}，主要看${YS.n}。${YS.bad?(live.length?'病神出现在三传里，病象比较明显，可以多照顾自己。':hits.length?'病神入传但落空亡，症状可能没有看起来那么重。':'病神没有进入三传，从课上看病象不明显。'):(live.length?'它出现在三传里，这件事今天有动静。':hits.length?'它进了三传但落空亡，可能雷声大、雨点小。':'它没出现在三传里，这件事今天也许不会有明显进展。')}</p>`:'')+dlrPlain(r,kong)),dadv)}
    <div class="sec"><h4>四课（上为天盘神，下为干支）</h4><div class="ke">${ke}</div></div>
    <div class="sec"><h4>三传</h4><div class="chuan">${ch}</div></div>
@@ -718,7 +826,7 @@ function castDLR(o){
 
 /* ---- 八字 · 今日 ---- */
 const HE5={甲:'己',己:'甲',乙:'庚',庚:'乙',丙:'辛',辛:'丙',丁:'壬',壬:'丁',戊:'癸',癸:'戊'};
-function castBZ(){
+function castBZ(o={}){
   const p=S.profile,bc=birthCalc(),lunOf=c=>X.Solar.fromYmdHms(c.y,c.m,c.d,c.H,c.M,0).getLunar();
   const LB=lunOf(bc.bj),LL=lunOf(bc.loc),ecB=LB.getEightChar(),ecL=LL.getEightChar(),BL=LL,ec=ecL,hasH=bc.known;
   const NY=gz=>X.LunarUtil.NAYIN[gz]||'';
@@ -735,6 +843,7 @@ function castBZ(){
   const html=`<span class="tape"></span>
    <div class="o-head"><span class="o-title">八字 · 今日</span><span class="badge">${esc(p.name||'我')}</span></div>
    <div class="o-meta">生于 ${p.birth.replace(/-/g,'.')} ${p.time?p.time:hasH?hourName(p.hour):'（时辰未填，只排三柱）'} · ${BL.getYearInChinese()}年${BL.getMonthInChinese()}月${BL.getDayInChinese()}<br>${bc.note}</div>
+   ${undCard('bz',o)}
    <div class="sec"><div class="grid4">${pillars}</div></div>
    <div class="sec"><h4>五行个数（干支各算一个，共 ${tot} 个）</h4><div class="wx">${Object.entries(cnt).map(([k,v])=>`<div><i style="--h:${v/tot*100}%"></i>${k} ${v}</div>`).join('')}</div></div>
    <div class="sec"><h4>今日</h4><dl class="kv"><dt>日主</dt><dd>${dm}${WXG[dm]}（${isYang(dm)?'阳':'阴'}）</dd><dt>流年</dt><dd>${ly}（${shishen(dm,ly[0])}）</dd><dt>流月</dt><dd>${lm}（${shishen(dm,lm[0])}）</dd><dt>流日</dt><dd><b style="font-weight:500">${ld}</b>（天干${ld[0]}为${ssD}）</dd>${yun}</dl></div>
@@ -750,7 +859,7 @@ function castBZ(){
 const STAR_WX={紫微:'阴土',天机:'阴木',太阳:'阳火',武曲:'阴金',天同:'阳水',廉贞:'阴火，兼木',天府:'阳土',太阴:'阴水',贪狼:'阳木，兼水',巨门:'阴水，一说阴土',天相:'阳水',天梁:'阳土',七杀:'阴金，兼火',破军:'阴水'};
 const PALACE_DESC={命宫:'自身性情与整体走向',兄弟:'手足、同辈',夫妻:'伴侣与感情',子女:'子女、创作与晚辈',财帛:'钱财进出',疾厄:'身体状况',迁移:'外出与外界际遇',仆役:'朋友、同事、部属',交友:'朋友、同事、部属',官禄:'事业、学业',田宅:'居所、家宅',福德:'精神状态与享受',父母:'长辈、上司与文书'};
 const SIHUA=[['化禄','财禄、顺遂与机缘'],['化权','掌控与能力发挥'],['化科','名声、贵人与文书'],['化忌','阻滞与执着，需要留心']];
-function castZW(){
+function castZW(o={}){
   const p=S.profile,bc=birthCalc(),lc=bc.loc,ds=`${lc.y}-${lc.m}-${lc.d}`,LL=X.Solar.fromYmdHms(lc.y,lc.m,lc.d,lc.H,lc.M,0).getLunar(),isLeap=LL.getMonth()<0;
   const lp=p.leap||'half';let a,leapTxt='';
   if(isLeap&&lp==='next'){let ly=LL.getYear(),lm=Math.abs(LL.getMonth())+1;if(lm>12){lm=1;ly++}a=X.astro.byLunar(`${ly}-${lm}-${LL.getDay()}`,bc.hourIdx,p.gender,false,false,'zh-CN');leapTxt='闰月生：整月按下个月排'}
@@ -764,6 +873,7 @@ function castZW(){
   const html=`<span class="tape"></span>
    <div class="o-head"><span class="o-title">紫微 · 今日</span><span class="badge">${esc(p.name||'我')}</span></div>
    <div class="o-meta">${a.lunarDate} ${a.time} · ${a.chineseDate} · ${p.gender}<br>${bc.note}${leapTxt?'；'+leapTxt:''}</div>
+   ${undCard('zw',o)}
    <div class="sec"><h4>本命</h4><dl class="kv"><dt>命宫</dt><dd>${ming.heavenlyStem}${ming.earthlyBranch} · ${mingStars}</dd><dt>身宫</dt><dd>${body?body.name:''}</dd><dt>五行局</dt><dd>${a.fiveElementsClass}</dd><dt>命主</dt><dd>${a.soul}</dd><dt>身主</dt><dd>${a.body}</dd></dl></div>
    <div class="o-big" style="font-size:22px">流日命宫在本命${dPal.name}</div>
    <p style="font-size:13.5px;line-height:1.8;margin:0">今日（${h.daily.heavenlyStem}${h.daily.earthlyBranch}日）以本命${dPal.name}为流日命宫，这一天多与「${PALACE_DESC[dPal.name]||''}」相关。流年（${h.yearly.heavenlyStem}${h.yearly.earthlyBranch}）命宫在本命${yPal.name}。</p>
@@ -794,13 +904,16 @@ const HL_ACTS={出行:['出行'],签约交易:['立券','交易','纳财'],搬�
 const hlAct=(Ld,act)=>{const ts=HL_ACTS[act];if(!ts)return null;const yi=Ld.getDayYi(),ji=Ld.getDayJi(),iy=ts.filter(t=>yi.includes(t)),ij=ts.filter(t=>ji.includes(t));
   if(iy.length&&!ij.length)return{v:2,t:`「${iy.join('、')}」列在宜`};if(ij.length&&!iy.length)return{v:-2,t:`「${ij.join('、')}」列在忌`};if(iy.length)return{v:0,t:'宜忌里都出现'};
   if(yi.includes('诸事不宜'))return{v:-2,t:'今日诸事不宜'};if(yi.includes('馀事勿取'))return{v:-1,t:'宜里没有，且「馀事勿取」'};return{v:0,t:'宜忌都没列'}};
-function castHL(o={}){
+function castHL(o={}){if(!o.qp&&o.ask)o.qp=parseQ(o.ask);
   const L=nowLunar(),ts=L.getDayTianShenType(),z=L.getZhiXing(),H=hlScore(L),act=HL_ACTS[o.act]?o.act:null,A=act?hlAct(L,act):null;
   const p=S.profile;let sx='',chong=0;if(p.birth){try{const [y,m,d]=p.birth.split('-').map(Number);sx=X.Solar.fromYmd(y,m,d).getLunar().getYearShengXiao();if(L.getDayChongShengXiao()===sx)chong=-1}catch(e){}}
   const sc=(A?A.v*1.5+H.sc*.5:H.sc)+chong;
   const grade=sc>=3?0:sc>=2?1:sc>=1?2:sc>-1?3:sc>-2.5?4:sc>-4?5:6;
   const f=n=>(n>0?'+':'')+n;
   const basis=`${act?`想做「${act}」：${A.t}（${f(A.v)}×1.5）· 日子本身（以下合计×0.5）：`:''}值神${L.getDayTianShen()}·${ts}（${f(H.a)}）· ${z}日（${f(H.b)}）· ${L.getXiu()}宿${L.getXiuLuck()}（${f(H.c)}）${sx?` · 今日冲${L.getDayChongShengXiao()}，你属${sx}（${chong?'−1':'0'}）`:''} ＝ ${f(sc)}，为${gName(grade)}。<span class="gsrc">择日以事为主：选了想做的事，它在不在宜忌里占主要份量，日子本身的吉凶减半；建除吉凶据「建满平收黑，除危定执黄；成开皆可用，闭破不相当」；${sx?'生肖按农历正月初一划分；':'在设置里填了出生日期，会再看今天冲不冲你的生肖；'}各项分值是本程序的口径。</span>`;
+  const hlWhen=()=>{if(!act)return '';const ds=nextDays(Ld=>okDay(Ld)&&!(sx&&Ld.getDayChongShengXiao()===sx),3,60);
+    return yqBox(ds.length?`<p>${act?`接下来适合「${act}」的日子`:'接下来值神、建除、星宿至少两项吉的日子'}${sx?'（已避开冲你生肖的日子）':''}：</p><ul class="dlist">${ds.map(x=>`<li><b>${md(x.d)}</b> ${x.L.getDayTianShenType()}·${x.L.getZhiXing()}日${act?` · 宜${HL_ACTS[act].filter(t=>x.L.getDayYi().includes(t)).join('、')}`:''}</li>`).join('')}</ul>`:`<p>往后 60 天里没找到特别合适的日子，可以挑宜忌都没提到、日子本身不差的一天。</p>`,
+      '黄历是择日：它不预测事情什么时候发生，只告诉你哪天做这件事比较合适。')};
   const okDay=Ld=>act?(hlAct(Ld,act).v>0&&hlScore(Ld).sc>=-1):hlScore(Ld).sc>=1;
   let nx='';if(grade>=3){const t=new Date();for(let i=1;i<=45;i++){const d=new Date(t.getFullYear(),t.getMonth(),t.getDate()+i,12);const Ld=X.Solar.fromDate(d).getLunar();if(okDay(Ld)&&!(sx&&Ld.getDayChongShengXiao()===sx)){nx=`${d.getMonth()+1}月${d.getDate()}日</b>（周${'日一二三四五六'[d.getDay()]}，${Ld.getDayTianShenType()}·${Ld.getZhiXing()}日${act?`，宜${HL_ACTS[act].filter(x=>Ld.getDayYi().includes(x)).join('、')}`:''}）`;break}}}
   const yi=L.getDayYi().filter(x=>x!=='无'&&x!=='诸事不宜').slice(0,4);
@@ -815,7 +928,9 @@ function castHL(o={}){
    <div class="o-head"><span class="o-title">今日黄历</span><span class="badge">${ts}日</span></div>
    <div class="o-meta">${todayStr().replace(/-/g,'.')} · ${L.getYearInGanZhi()}年 ${L.getMonthInChinese()}月${L.getDayInChinese()} · ${L.getMonthInGanZhi()}月 ${L.getDayInGanZhi()}日</div>
    <div class="o-big" style="font-size:26px">${L.getZhiXing()}日 · ${L.getDayTianShen()}${lvl(L.getDayTianShenLuck(),L.getDayTianShenLuck()==='吉'?'good':'bad')}</div>
+   ${undCard('hl',o)}
    ${gradeHTML(grade,basis)}
+   ${o.qp&&o.qp.kind==='when'?hlWhen():''}
    ${arrange(grade,plainBox(hlPlain(L)),hadv)}
    <div class="sec"><h4>宜<span class="qtip">点词条看古义</span></h4><div class="yj">${L.getDayYi().map(x=>`<span data-t="${x}">${x}</span>`).join('')}</div></div>
    <div class="sec"><h4>忌</h4><div class="yj ji">${L.getDayJi().map(x=>`<span data-t="${x}">${x}</span>`).join('')}</div></div>
@@ -825,6 +940,66 @@ function castHL(o={}){
 }
 
 /* ---- 起课前的输入 ---- */
+/* ---- 读懂问题：关键词规则（不联网、不用 AI） ---- */
+const QK=[
+ ['失物',/丢了|丢失|遗失|找不到|找不着|不见了|失物|弄丢|落在哪|放哪|放在哪/],
+ ['疾病',/病|身体|健康|手术|医院|发烧|感冒|疼|痛|康复|好转|体检|复查|过敏|住院/],
+ ['官事',/官司|诉讼|起诉|仲裁|警察|罚款|纠纷|律师|法院|投诉|处分/],
+ ['工作',/工作|公司|面试|升职|加薪|跳槽|求职|找工作|实习|老板|领导|上司|入职|录用|秋招|春招|岗位|职位|辞职|裁员|转正|offer/i],
+ ['考试文书',/考试|考研|考公|雅思|托福|成绩|录取|证书|签证|合同|文件|论文|申请|毕业|答辩|分数|面签|审批|批下来/],
+ ['婚恋',/喜欢|恋爱|感情|对象|男朋友|女朋友|男友|女友|脱单|结婚|婚|复合|分手|暗恋|表白|相亲|桃花|前任|心意/],
+ ['求财',/钱|收入|工资|薪水|投资|股票|基金|生意|发财|奖金|报销|理财|赚|财|债|彩票/],
+ ['交易',/买|卖|签约|成交|下单|谈判|砍价|价格/],
+ ['家宅',/家里|家人|房子|租房|买房|搬家|装修|室友|房东|家宅|住处/],
+ ['出行',/出国|回国|出门|旅行|旅游|出差|航班|飞机|机票|高铁|火车|自驾|行程|再来|回来|回去|回家|到达|到家|来.{0,4}(美国|中国|国内|这边|这里)|去.{0,6}(玩|旅|国|省|市|州|岛|美国|日本|韩国|英国|欧洲|中国|上海|北京)|快递|包裹|到货|发货/],
+ ['谒见',/见面|见到|拜访|约见|面谈|约会|见一面/],
+ ['天时',/天气|下雨|下雪|晴天|刮风|台风|降温/],
+ ['饮食',/吃饭|饭局|聚餐|请客/],
+ ['求名',/出名|名气|评选|获奖|比赛|竞选|排名|涨粉/]];
+const QKIND=[['when',/什么时候|啥时候|何时|几时|哪天|哪一天|多久|多长时间|哪年|哪个月|几月|几号|多少天|何日|什么时间|几点|多快|快了吗|快了没/],
+ ['where',/在哪|哪里|哪儿|什么地方|方位|往哪|哪个方向|放哪/],['which',/还是|哪个好|选哪|哪一个/],['whether',/能不能|会不会|可不可以|能否|是否|行不行|好不好|顺不顺|成不成|有没有|[吗嘛]/]];
+const KIND_N={when:'什么时候',where:'在哪里',which:'选哪个',whether:'能不能、顺不顺'};
+const OTHER_P=/他|她|它|对方|[爸妈]|爷爷|奶奶|姥|外公|外婆|老公|老婆|孩子|儿子|女儿|朋友|同学|同事|男友|女友|男朋友|女朋友|对象|快递|包裹|货/;
+function parseQ(t){t=(t||'').trim();if(!t)return null;const hit=[];let topic=null;
+  const all=QK.filter(([n,re])=>re.test(t));const kind=(QKIND.find(([n,re])=>re.test(t))||[null])[0];
+  const cx=all.find(([n])=>n==='出行'),generic=cx&&/^(回来|回去|回家|到达|到家)$/.test(t.match(cx[1])[0]),others=all.filter(([n])=>n!=='出行');
+  const person=OTHER_P.test(t)&&!/^我/.test(t);
+  if(cx&&kind==='when'&&(!generic||!others.length||person))topic='出行';else if(others.length&&generic&&!person)topic=others[0][0];else if(cx&&generic&&person)topic='出行';else if(all.length)topic=all[0][0];
+  if(!topic&&kind==='when'&&person&&/来|回|到/.test(t))topic='行人';
+  if(topic==='出行'&&OTHER_P.test(t)&&!/^我/.test(t)&&/来|回|到/.test(t))topic='行人';
+  const words=[];QK.forEach(([n,re])=>{const m=t.match(re);if(m&&(n===topic||(topic==='行人'&&n==='出行')))words.push(m[0])});QKIND.forEach(([n,re])=>{const m=t.match(re);if(m&&n===kind)words.push(m[0])});
+  const far=/几年|哪年|明年|后年|毕业|退休|移民|美国|中国|国外|出国|回国|结婚|买房/.test(t),near=/今天|明天|后天|今晚|这周|这礼拜|下周|这几天|马上|快递|包裹|钥匙/.test(t);
+  if(topic==='行人'&&!words.some(w=>/来|回|到|快递|包裹|货/.test(w))){const m=t.match(/来|回|到/);if(m)words.unshift(m[0])}
+  return{t,topic,kind,words:[...new Set(words)],span:near?'near':far?'far':'mid',years:/几年|哪年/.test(t),day:(t.match(/今天|今晚|明天|明晚|后天/)||[])[0]||''}}
+const MAPQ={xlr:{失物:'失物',疾病:'疾病',官事:'官事',工作:'官事',求财:'求财',交易:'求财',家宅:'家宅',出行:'行人',行人:'行人'},
+ mh:{失物:'失物',疾病:'疾病',官事:'人事',考试文书:'求名',工作:'求名',求名:'求名',婚恋:'婚姻',求财:'求财',交易:'交易',家宅:'家宅',出行:'出行',行人:'行人',谒见:'谒见',天时:'天时',饮食:'饮食'},
+ dlr:{求财:'求财',交易:'求财',考试文书:'考试文书',工作:'工作',求名:'工作',疾病:'疾病',婚恋:'婚恋',出行:'出行',行人:'出行'}};
+const DEFQ={xlr:'综合',mh:'人事',dlr:'综合'};
+const HLK=[['搬家入宅',/搬家|入住|乔迁|入宅/],['签约交易',/签约|签合同|合同|交易|买卖|成交/],['开业开张',/开业|开张|开店/],['嫁娶订婚',/结婚|领证|订婚|婚礼|嫁|娶/],['动工装修',/装修|动工|动土|开工/],['看病求医',/看病|手术|就医|求医|体检/],['理发',/理发|剪头|剪发|烫发|染发/],['安床',/安床|换床|买床/],['祭祀祈福',/祭祀|祈福|拜佛|上香|扫墓/],['聚会会友',/聚会|聚餐|见朋友|会友|请客/],['入学拜师',/入学|开学|报到|拜师/],['出行',/出行|出门|旅行|旅游|出差|出国|回国|航班|机票|再来|来.{0,4}美国|去.{0,6}(玩|美国|国外)/]];
+const hlActOf=t=>{const m=HLK.find(([n,re])=>re.test(t||''));return m?m[0]:null};
+/* 理解说明：k=方法，qp=解析结果，q=实际采用的分类 */
+function undText(k,qp,q,act){if(!qp)return '';
+  const tp=qp.topic==='行人'?'行人（别人或东西来到）':qp.topic==='出行'?'出行':qp.topic;
+  let t=`理解为：${tp?`问<b>${tp}</b>`:'没认出是哪一类事'}${qp.kind?`，问的是<b>${KIND_N[qp.kind]}</b>`:''}${qp.words.length?`（依据：${qp.words.map(w=>'「'+esc(w)+'」').join('')}）`:''}。`;
+  if(k==='xlr'||k==='mh'||k==='dlr'){const m=MAPQ[k][qp.topic];
+    if(!qp.topic)t+=`按「${q}」看。`;else if(!m)t+=`这一法没有对应的分类，按「${DEFQ[k]}」看。`;
+    else if(k==='xlr'&&qp.topic==='出行')t+='小六壬没有「出行」一类，歌诀里的「行人」就是出门在外、在路上的人，所以按「行人」看。';
+    else if(k==='dlr'&&qp.topic==='行人')t+='大六壬这里按「出行」看驿马。';
+    else if(m!==qp.topic){const d=(k==='mh'&&QDESC_MH[m])||(k==='dlr'&&QDESC_DLR[m])||QDESC[m];t+=`这一法里归「${m}」${d?`（${d.replace(/。$/,'')}）`:''}。`}
+    if(q&&m&&q!==m)t+=`你手动选了「${q}」，按你选的看。`}
+  if(k==='hl')t+=act?`想做的事按「${act}」看。`:'没认出想做什么事，看整天。';
+  if(k==='bz'||k==='zw')t+='八字、紫微看的是你和今天的关系，不针对单个问题，也不推具体时间。';
+  if(qp.kind==='when'&&(k==='xlr'||k==='mh'||k==='dlr'))t+='下面会多一段「应期」。';
+  if(qp.kind==='when'&&k==='hl')t+=act?'下面会列出接下来适合的日子。':'黄历是择日，只能告诉你哪天适合做某件事，回答不了事情什么时候发生；想问时间，可以换小六壬、梅花易数或大六壬。';
+  if(qp.kind==='which')t+='二选一的问题，古法一次只看一件事，可以把两个选项分开各问一次。';
+  if(qp.kind==='where')t+=k==='xlr'?'结果宫的歌诀里如果有讲方位的句子，会一并标出。':'这一法不专门推方位，下面只看吉凶走向。';
+  return t}
+const undCard=(k,o)=>o.ask?`<div class="ask">所问：<b>${esc(o.ask)}</b></div>${o.qp?`<div class="und">${undText(k,o.qp,o.q,o.act)}</div>`:''}`:'';
+const UNIT=qp=>qp&&qp.span==='near'?['天','近事论日']:qp&&qp.span==='far'?[qp.years?'年':'个月',qp.years?'问的是哪一年，论年':'远一点的事论月']:['天或个月','几天内的事论日，几个月的事论月'];
+const yqBox=(body,src)=>`<div class="sec yq"><h4>应期 · 什么时候</h4>${body}<p class="gloss" style="margin-left:0">${src}</p></div>`;
+/* 往后找日子：返回 [{d,L}] */
+function nextDays(pred,n,max=60){const out=[],t=new Date();for(let i=1;i<=max&&out.length<n;i++){const d=new Date(t.getFullYear(),t.getMonth(),t.getDate()+i,12);const Ld=X.Solar.fromDate(d).getLunar();if(pred(Ld))out.push({d,L:Ld})}return out}
+const md=d=>`${d.getMonth()+1}月${d.getDate()}日（周${'日一二三四五六'[d.getDay()]}）`;
 function missingFor(k){const p=S.profile,m=[];if(k==='bz'||k==='zw'){if(!p.birth)m.push('出生日期')}if(k==='zw'){if(p.hour==null&&!p.time)m.push('出生时辰');if(p.gender!=='女'&&p.gender!=='男')m.push('性别')}return m}
 function askOracle(){
   const k=S.method,M=METHODS[k],L=nowLunar();
@@ -842,9 +1017,10 @@ function askOracle(){
   const qs=k==='xlr'?Object.keys(XLR_Q):k==='mh'?MH_CATS:k==='dlr'?DLR_CATS:null;
   const timeNote={xlr:`以此刻起课：${L.getMonthInChinese()}月${L.getDayInChinese()}、${L.getTimeZhi()}时`,mh:`以此刻起卦：${L.getYearZhi()}年、${L.getMonthInChinese()}月${L.getDayInChinese()}、${L.getTimeZhi()}时`};
   const p=S.profile;
+  const curQ=()=>st.qp&&!st.qManual&&qs?(MAPQ[k][st.qp.topic]||DEFQ[k]):st.q;
   const body=()=>{let h='';
-    if(qs)h+=`<div class="lab2">所问之事<span class="qtip">选中后再点一下，看是什么意思</span></div><div class="segs" data-g="q">${qs.map(x=>`<button type="button" class="chip plain" data-v="${x}" aria-pressed="${st.q===x}">${x}</button>`).join('')}</div>${st.qinfo?`<div class="qhint"><b>${st.q}</b>：${(k==='mh'&&QDESC_MH[st.q])||(k==='dlr'&&QDESC_DLR[st.q])||QDESC[st.q]||''}</div>`:''}`;
-    if(k!=='hl')h+=`<div class="lab2">写下想问的（可不填）</div><input class="tin" id="askTxt" maxlength="40" placeholder="比如：钥匙放哪了" value="${esc(st.ask)}">`;
+    h+=`<div class="lab2">写下想问的（可不填）</div><input class="tin" id="askTxt" maxlength="40" placeholder="${k==='hl'?'比如：什么时候搬家合适':'比如：什么时候再来美国'}" value="${esc(st.ask)}"><div class="und" id="qUnd"></div>`;
+    if(qs)h+=`<div class="lab2">所问之事<span class="qtip">会按你写的自动选；也可以自己点。选中后再点一下，看是什么意思</span></div><div class="segs" data-g="q">${qs.map(x=>`<button type="button" class="chip plain" data-v="${x}" aria-pressed="${st.q===x}">${x}</button>`).join('')}</div>${st.qinfo?`<div class="qhint"><b>${st.q}</b>：${(k==='mh'&&QDESC_MH[st.q])||(k==='dlr'&&QDESC_DLR[st.q])||QDESC[st.q]||''}</div>`:''}`;
     if(k==='xlr'||k==='mh'){h+=`<div class="lab2">起课方式</div><div class="segs" data-g="how"><button type="button" class="chip plain" data-v="time" aria-pressed="${st.how==='time'}">用此刻时间</button><button type="button" class="chip plain" data-v="num" aria-pressed="${st.how==='num'}">${k==='xlr'?'报三个数':'报数'}</button></div>`;
       h+=st.how==='time'?`<div class="note" style="margin-top:10px">${timeNote[k]}</div>`:`<div class="ntiles ${k==='mh'?'two':''}">${(k==='xlr'?[0,1,2]:[0,1]).map(i=>`<button type="button" class="ntile ${st.slot===i?'on':''}" data-slot="${i}"><b class="${st.nums[i]?'':'ph'}">${st.nums[i]||'–'}</b><small>${k==='mh'?(i===0?'上卦数':'下卦数 · 可不填'):'第'+'一二三'[i]+'个数'}</small></button>`).join('')}</div>
         <div class="keypad">${[1,2,3,4,5,6,7,8,9].map(n=>`<button type="button" data-key="${n}">${n}</button>`).join('')}<button type="button" class="fn" data-key="c">清空</button><button type="button" data-key="0">0</button><button type="button" class="fn" data-key="b">⌫</button></div><div class="ask">${k==='xlr'?'心里想着所问之事，随口报三个 1–99 的数。':'报一个数：作上卦，时辰数作下卦；报两个数：先数为上卦，后数为下卦。'}</div>`}
@@ -853,8 +1029,14 @@ function askOracle(){
     if(k==='zw')h+=`<div class="note" style="margin-top:12px">用设置里的个人信息：${p.birth.replace(/-/g,'.')} ${hourName(p.hour)} · ${p.gender}</div>`;
     if(k==='hl')h+=`<div class="lab2">今天想做的事（可不选）</div><div class="segs" data-g="act">${['不选',...Object.keys(HL_ACTS)].map(x=>`<button type="button" class="chip plain" data-v="${x}" aria-pressed="${(st.act||'不选')===x}">${x}</button>`).join('')}</div><div class="note" style="margin-top:10px">今天 ${todayStr().replace(/-/g,'.')} · ${L.getMonthInChinese()}月${L.getDayInChinese()}。选了想做的事，会先看它在不在今天的宜忌里；不选就看整天。${p.birth?'':'在设置里填出生日期，还会看今天冲不冲你的生肖。'}</div>`;
     return h};
+  /* 按输入的文字更新理解说明、自动选分类，不重建输入框 */
+  const paintParse=c=>{st.qp=parseQ(st.ask);
+    if(qs&&!st.qManual){st.q=st.qp?(MAPQ[k][st.qp.topic]||DEFQ[k]):DEFQ[k];c.querySelectorAll('[data-g=q] .chip').forEach(x=>x.setAttribute('aria-pressed',x.dataset.v===st.q))}
+    if(k==='hl'&&!st.actManual){st.act=st.qp&&hlActOf(st.ask)||null;c.querySelectorAll('[data-g=act] .chip').forEach(x=>x.setAttribute('aria-pressed',x.dataset.v===(st.act||'不选')))}
+    const u=c.querySelector('#qUnd');if(u){u.innerHTML=st.qp?undText(k,st.qp,st.q,st.act):'';u.hidden=!st.qp}};
   openBS(`<div class="bs-title"><h3>${M.n}</h3><span>${M.need}</span></div><div id="askBody"></div><div class="acts"><button class="btn sm" data-x>取消</button><button class="btn sm primary" data-go>摇签起课</button></div>`,c=>{
-    const ab=c.querySelector('#askBody');const syncAsk=()=>{const v=c.querySelector('#askTxt');if(v)st.ask=v.value};ab.innerHTML=body();
+    const ab=c.querySelector('#askBody');const syncAsk=()=>{const v=c.querySelector('#askTxt');if(v)st.ask=v.value};ab.innerHTML=body();paintParse(c);
+    ab.addEventListener('input',e=>{if(e.target.id==='askTxt'){st.ask=e.target.value;paintParse(c)}});
     const paintTiles=()=>{c.querySelectorAll('.ntile').forEach(t=>{const i=+t.dataset.slot,b=t.querySelector('b');t.classList.toggle('on',st.slot===i);b.textContent=st.nums[i]||'–';b.classList.toggle('ph',!st.nums[i])})};
     c.onclick=async e=>{const b=e.target.closest('button');if(!b)return;
       if(b.dataset.slot!=null){st.slot=+b.dataset.slot;clack(0,.05);paintTiles();return}
@@ -865,11 +1047,11 @@ function askOracle(){
           else if(!(cur===''&&kk==='0'))st.nums[st.slot]=cur+kk;
           if((st.nums[st.slot]||'').length>=maxLen&&st.slot<nSlots-1&&k==='xlr')st.slot++}
         paintTiles();const t=c.querySelector(`.ntile[data-slot="${st.slot}"] b`);t&&t.animate([{transform:'scale(1.25)'},{transform:'none'}],{duration:180,easing:'ease-out'});return}
-      const g=b.parentElement.dataset.g;if(g){syncAsk();if(g==='q'&&st.q===b.dataset.v){st.qinfo=!st.qinfo}else{if(g==='q')st.qinfo=false;st[g]=b.dataset.v}clack(0,.06);ab.innerHTML=body();
+      const g=b.parentElement.dataset.g;if(g){syncAsk();if(g==='q'&&st.q===b.dataset.v){st.qinfo=!st.qinfo}else{if(g==='q'){st.qinfo=false;st.qManual=true}if(g==='act'){st.actManual=true;st.act=b.dataset.v==='不选'?null:b.dataset.v}else st[g]=b.dataset.v}clack(0,.06);ab.innerHTML=body();paintParse(c);
         if(g==='q'&&st.qinfo){const qh=c.querySelector('.qhint');qh&&qh.animate([{opacity:0,transform:'translateY(-4px)'},{opacity:1,transform:'none'}],{duration:200,easing:'ease-out'})}return}
       if(b.hasAttribute('data-x')){closeBS();return}
       if(b.hasAttribute('data-go')){
-        const v=c.querySelector('#askTxt');if(v)st.ask=v.value.trim();let arg=st;
+        const v=c.querySelector('#askTxt');if(v)st.ask=v.value.trim();st.qp=parseQ(st.ask);let arg=st;
         if(st.how==='num'){const need=k==='xlr'?3:1;const tiles=[...c.querySelectorAll('.ntile')];
           const nums=tiles.map((t,i)=>st.nums[i]?parseInt(st.nums[i],10):null);let bad=false;
           tiles.forEach((t,i)=>{if(i<need&&!(nums[i]>0)){t.classList.remove('shake');void t.offsetWidth;t.classList.add('shake');bad=true}});
@@ -918,13 +1100,13 @@ async function openNote({html,stamp,stickEl,entry}){
   await Promise.all([ta.finished.catch(()=>{}),ba.finished.catch(()=>{})]);
   card.style.height=''; card.style.visibility='visible'; fold.remove();
   const act=$('#nact');
-  act.innerHTML=stickEl?`<button class="btn" id="aBack">放回签筒</button><button class="btn primary" id="aAgain">${mode==='oracle'?'再起一课':'再抽一支'}</button>`
+  act.innerHTML=stickEl?`<button class="btn" id="aBack">放回签筒</button><button class="btn primary" id="aAgain">${mode==='oracle'?'再起一课':mode==='quote'?'再抽一句':'再抽一支'}</button>`
                        :`<button class="btn danger" id="aDel">删除</button><button class="btn primary" id="aBack">收起</button>`;
   [...act.children].forEach((b,i)=>b.animate([{opacity:0,transform:'translateY(10px)'},{opacity:1,transform:'none'}],{duration:280*T,delay:i*70*T,fill:'backwards',easing:'ease-out'}));
   const close=q=>closeNote(card,stickEl,q);
   $('#aBack').onclick=()=>close(false);
   $('#scrim').onclick=()=>close(false);
-  if(stickEl)$('#aAgain').onclick=async()=>{await close(true);if(mode==='oracle')askOracle();else drawDiary()};
+  if(stickEl)$('#aAgain').onclick=async()=>{await close(true);if(mode==='oracle')askOracle();else if(mode==='quote')drawQuote();else drawDiary()};
   else{ let armed=false; $('#aDel').onclick=async ev=>{ if(!armed){armed=true;ev.currentTarget.textContent='确定删除？';setTimeout(()=>{armed=false;const b=$('#aDel');if(b)b.textContent='删除'},3000);return}
      entries=entries.filter(x=>x.id!==entry.id);save();await close(false);renderList();renderCup();toast('删掉了')}}
   busy=false;
@@ -1156,6 +1338,9 @@ function specHTML(){
    <li>每张签都写明依据；释义里的“通行释义”是今人常用的概括，不是古籍原文。</li>
    <li><b>七级吉凶</b>：大吉、中吉、小吉、平、小凶、中凶、大凶，每一级都由几项依据合看，卡片上逐项列出分值。小六壬：三宫读作起因、过程、结果（结果宫记两分），每宫对所问之事的吉凶取歌诀原句，再加前两宫对结果宫的五行生克（五行取道家、江氏一派）。梅花易数：体用为主，加变卦、互卦（与体同五行为「体党」）、体卦旺衰，再参入动爻爻辞的吉、凶、悔、吝、厉、无咎（原书说先天起卦「不必用《易》书之辞」，所以只占小份量）。大六壬：三传天将（末传记两分、空亡不计），加所问之事的类神是否入传、是否空亡，以及三传对日干的生克。黄历：先看想做的事在不在宜忌里，再看值神黄黑道、建除、二十八宿，填了出生日期还看是否冲你的生肖。各项吉凶取自古籍或通书，分值和分级界线是本程序的口径。八字、紫微只列关系，不分吉凶</li>
    <li><b>可以怎么做</b>：先引古籍原句（小六壬歌诀、《梅花易数》、《周易·系辞》、择日口诀），再另列「今人建议」，两者分开标注；建议都用商量的语气，只是参考。默认温和显示，偏凶的签写作宜缓、宜慎、宜守，并把化解放在最前；设置里可切回原字。</li>
+   <li><b>读懂问题</b>：写下的问题用关键词规则识别（不联网、不用 AI）：认出是哪类事（出行、行人、失物、求财、工作、考试文书、婚恋、疾病等），以及问的是什么时候、在哪里、选哪个还是能不能，再自动选好各法对应的分类。卡片和起课面板都会写出「理解为……」和依据的字眼；理解错了可以自己点分类，按你选的为准。</li>
+   <li><b>应期（问什么时候）</b>：小六壬用口诀应期数（大安、小吉一五七，留连二八十，速喜、空亡三六九，赤口四七十），并按歌诀说快慢；梅花易数按卦气，看体卦五行和后天方位对应的日或月（今人说法，来源不足，卡片上标明）；大六壬看发用是否为太岁、月建、日支，以及空亡出旬、填实；黄历列出接下来适合做这件事的日子。八字、紫微不推应期。数字的单位古书没写，按事情远近读成日、月或年，这是本程序的读法。</li>
+   <li><b>好句签</b>：古典 6 成、现代 2 成、外国 2 成的比例抽取。古典诗文以 chinese-poetry（MIT）为底本校字，异文写明；现代只收去世已逾 50 年的中国作家；外国只收原文已进入公有领域的作品，中文自译并附原文。卡片顺序：好句 → 全文（诗）或上下文 → 释义。可按心情和时令（节气、节日、四季、今天应景）筛选。</li>
    <li><b>一事不二占</b>：同一天同一件事再问时，引蒙卦「初筮告，再三渎，渎则不告」提醒，仍可继续。</li>
   </ul>
   <h3>开源库与数据（均可免费商用）</h3>
@@ -1166,7 +1351,7 @@ function specHTML(){
   <tr><td>摇签</td><td>1050ms</td><td>±14° 衰减摇摆；每支签随机跳动；14 次碰撞声 + 短震动</td></tr>
   <tr><td>出签 / 飞入</td><td>820ms</td><td>选中的签冲出，横转 90° 飞到中心</td></tr>
   <tr><td>展开</td><td>300 + 约 550ms</td><td>三折便签弹出，上折页翻开到一半时下折页接着翻，两页交叠进行</td></tr>
-  <tr><td>换签筒</td><td>约 1.8s</td><td>签全部飞出 → 旧筒滑出 → 新筒滑入回弹 → 签一支支落进新筒，每支落地都有声音</td></tr>
+  <tr><td>换签筒</td><td>约 1.6s</td><td>左右滑动签筒或点下方切换：三个签筒排成一圈 3D 转盘，旧筒带着签转向一侧、隐入后方，新筒从另一侧转到正前方并轻微回弹，然后签一支支落进新筒。滑动距离不够会弹回原位。</td></tr>
   <tr><td>换签种</td><td>约 1.3s</td><td>签飞出，再按新签种的签头样式落回</td></tr></table></div>
   <h3>日期选择</h3>
   <p>自绘日历：每格同时显示公历和农历（初一显示月份，节气日显示节气名），左右滑动或点箭头翻月，点年月进入年份/月份网格，选中后自动收起。写日记时有“今天 / 昨天 / 前天”快捷键；选出生日期时直接从年份开始。</p>

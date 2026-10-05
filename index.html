@@ -115,7 +115,11 @@ main{position:relative;z-index:1;min-height:0}
 
 /* cup */
 .cup-area{flex:1;display:grid;place-items:center;min-height:0;position:relative}
-.cup-wrap{position:relative;width:160px;height:300px;transform-origin:50% 88%;touch-action:manipulation;margin-bottom:24px}
+.cup-area{touch-action:pan-y}
+.cflow{position:relative;width:160px;height:300px;margin-bottom:24px;perspective:820px;perspective-origin:50% 60%}
+.cface{position:absolute;inset:0;transform-origin:50% 70%;will-change:transform,opacity}
+.cface.ghost{pointer-events:none;opacity:0}
+.cup-wrap{position:relative;width:160px;height:300px;transform-origin:50% 88%;touch-action:pan-y}
 .cup-wrap svg{position:absolute;left:0;top:150px;width:160px;height:150px;overflow:visible}
 .cup-back{z-index:0}.sticks{position:absolute;inset:0;z-index:1}.cup-front{z-index:2}
 .cup-shadow{position:absolute;left:22px;right:22px;bottom:-8px;height:16px;border-radius:50%;background:radial-gradient(closest-side,var(--blush-2),transparent);z-index:-1}
@@ -128,12 +132,12 @@ main{position:relative;z-index:1;min-height:0}
 
 /* mode switch */
 .modes{position:relative;z-index:2;display:flex;justify-content:center;padding:4px 0 10px}
-.seg{position:relative;display:grid;grid-template-columns:1fr 1fr;padding:3px;border-radius:999px;background:var(--paper);border:1px solid var(--hair);width:220px}
+.seg{position:relative;display:grid;grid-template-columns:1fr 1fr 1fr;padding:3px;border-radius:999px;background:var(--paper);border:1px solid var(--hair);width:312px;max-width:calc(100vw - 32px)}
 .seg button{position:relative;z-index:1;height:34px;font-size:13px;letter-spacing:.1em;color:var(--ink-2);transition:color .25s;display:inline-flex;align-items:center;justify-content:center;gap:5px}
 .seg button svg{width:16px;height:16px}
 .seg button[aria-selected="true"]{color:var(--ink)}
-.seg-pill{position:absolute;top:3px;bottom:3px;left:3px;width:calc(50% - 3px);border-radius:999px;background:var(--blush);transition:transform .35s cubic-bezier(.3,1.4,.5,1)}
-.seg[data-m="oracle"] .seg-pill{transform:translateX(100%)}
+.seg-pill{position:absolute;top:3px;bottom:3px;left:3px;width:calc((100% - 6px) / 3);border-radius:999px;background:var(--blush);transition:transform .35s cubic-bezier(.3,1.4,.5,1)}
+.seg[data-m="oracle"] .seg-pill{transform:translateX(100%)}.seg[data-m="quote"] .seg-pill{transform:translateX(200%)}
 
 /* overlay */
 .overlay{position:absolute;inset:0;z-index:20}
@@ -200,11 +204,29 @@ main{position:relative;z-index:1;min-height:0}
 .tips li{font-size:13px;line-height:1.75;margin:2px 0}
 .tips b{font-weight:500}
 .qhint.repeat .quote{margin:6px 0}
+.und{margin-top:8px;font-size:12.5px;line-height:1.7;color:var(--ink-2);background:var(--paper);border:1px dashed var(--blush-2);border-radius:10px;padding:7px 10px}
+.und:empty,.und[hidden]{display:none}
+.und b{color:var(--ink);font-weight:500}
+.yq{border:1px solid var(--blush-2);border-radius:10px;padding:10px 12px;background:var(--paper)}
+.yq h4{color:var(--accent)}
+.yq p{font-size:13.5px;line-height:1.8;margin:0 0 6px}
+.yq b{font-weight:500}
+.dlist{margin:4px 0 6px;padding-left:18px}.dlist li{font-size:13px;line-height:1.8}
+.tagx{display:inline-block;margin-left:4px;font-size:10.5px;padding:0 6px;border-radius:999px;border:1px solid var(--line);color:var(--ink-2);vertical-align:1px}
 .path{display:flex;align-items:center;gap:4px;flex-wrap:wrap;font-size:12px;color:var(--ink-2);margin:8px 0 4px}
 .path span{padding:2px 8px;border-radius:999px;background:var(--blush);color:var(--ink)}
 .path span.on{background:var(--accent);color:var(--accent-ink)}
 .verse{font-family:var(--f-classic);font-size:15px;line-height:2;letter-spacing:.06em;margin:10px 0 2px;padding:10px 12px;background:var(--paper-back);border-radius:4px}
 .verse mark{background:none;color:var(--accent);border-bottom:1.5px solid var(--accent)}
+.qt-line{font-family:var(--f-display);font-size:22px;line-height:1.75;letter-spacing:.04em;margin:16px 0 6px;color:var(--ink)}
+.qt-orig{font-family:var(--f-num);font-style:italic;font-size:16px;line-height:1.5;color:var(--ink-2);margin:0 0 6px}
+.qt-by{text-align:right;font-size:13px;color:var(--ink-2);letter-spacing:.06em;margin-bottom:4px}
+.qt-full{font-family:var(--f-classic);font-size:14.5px;line-height:1.95;letter-spacing:.05em;padding:10px 12px;background:var(--paper-back);border-radius:4px}
+.qt-full p{margin:0}.qt-full p.gap{height:.7em}
+.qt-full mark{background:none;color:var(--accent);border-bottom:1.5px solid var(--accent)}
+.qt-full.en{font-family:var(--f-num);font-style:italic;font-size:15px;letter-spacing:0;margin-top:8px}
+.qt-yi{font-size:14px;line-height:1.85;margin:0}
+.qt-season{display:inline-block;font-size:11px;padding:1px 8px;border-radius:999px;background:var(--blush);color:var(--accent);margin-left:6px;letter-spacing:.08em}
 .sec{margin-top:14px}
 .sec h4{margin:0 0 6px;font-size:11.5px;font-weight:500;color:var(--ink-2);letter-spacing:.16em}
 .sec p{margin:0;font-size:13.5px;line-height:1.8}
@@ -471,16 +493,19 @@ pre.code{background:var(--paper);border:1px solid var(--hair);border-radius:10px
           <div class="row" id="moodRow"></div>
           <div class="row" id="weatherRow"></div>
           <div class="mlist" id="oracleRow"></div>
+          <div class="row" id="quoteRow"></div>
+          <div class="row" id="quoteRow2"></div>
         </div>
       </div>
       <div class="cup-area">
         <svg class="doodle doll" id="hang" viewBox="0 0 80 160" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"></svg>
+        <div class="cflow" id="cflow"><div class="cface ghost" id="cfPrev"></div><div class="cface ghost" id="cfNext"></div><div class="cface main" id="cfMain">
         <button class="cup-wrap" id="cup" aria-label="摇签筒，抽一篇日记">
           <svg class="cup-back" id="cupBack" viewBox="0 0 160 150" aria-hidden="true"></svg>
           <div class="sticks" id="sticks"></div>
           <svg class="cup-front" id="cupFront" viewBox="0 0 160 150" aria-hidden="true"></svg>
           <span class="cup-shadow"></span>
-        </button>
+        </button></div></div>
         <div class="empty-cup" id="emptyCup" hidden>这个组合还没有日记<br>换个心情试试</div>
         <div class="cup-hint" id="hint"></div>
       </div>
@@ -489,6 +514,7 @@ pre.code{background:var(--paper);border:1px solid var(--hair);border-radius:10px
           <span class="seg-pill"></span>
           <button role="tab" data-m="diary" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h11a1 1 0 0 1 1 1v15a1 1 0 0 1-1 1H6z"/><path d="M9.5 8h5M9.5 11.5h5"/></svg>日记签</button>
           <button role="tab" data-m="oracle" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6h14M5 10h6M13 10h6M5 14h14M5 18h6M13 18h6"/></svg>玄学签</button>
+          <button role="tab" data-m="quote" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3.5h10v17l-5-3.6-5 3.6z"/><path d="M10 8.5h4"/></svg>好句签</button>
         </div>
       </div>
     </section>
@@ -547,6 +573,7 @@ pre.code{background:var(--paper);border:1px solid var(--hair);border-radius:10px
   <div class="bs" id="bs" hidden><div class="scrim" id="bsScrim"></div><div class="bs-card" id="bsCard"></div></div>
 </div>
 <script src="js/xdata.js"></script>
+<script src="js/quotes.js"></script>
 <script src="js/vendor.js"></script>
 <script src="js/app.js"></script>
 </body>
